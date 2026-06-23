@@ -1,13 +1,36 @@
-import mysql.connector
+import mysql.connector, os
+from dotenv import load_dotenv
 from src.utils.Colors import NEGRITO, VERMELHO_B, RESET
 from src.utils.Connection import init_conn
 
-# Estrutura inicial do banco de dados
-def start_bd(conexao, cursor):
 
-    cursor.execute("CREATE DATABASE IF NOT EXISTS oficina")
-    cursor.execute("USE oficina")
-    
+def init_db() -> bool:
+    load_dotenv()
+    host = os.getenv("DB_HOST")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    port = os.getenv("DB_PORT")
+
+    try:
+        conexao = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            port=port
+        )
+         
+        cursor = conexao.cursor()
+        cursor.execute("CREATE DATABASE IF NOT EXISTS oficina")
+        cursor.execute("USE oficina")
+
+        cursor.close()
+        conexao.close()
+        return True
+    except mysql.connector.Error as e:
+        print("Erro para criar o banco de dados: ", e)
+        return False
+# Estrutura inicial do banco de dados
+def start_bd(conexao, cursor):  
     try:
         # [1] TABELA DE CLIENTES
         cursor.execute("""

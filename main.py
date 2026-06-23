@@ -14,10 +14,15 @@ from src.utils.protecao import obter_ano, obter_cpf, obter_placa
 
 # Conexão com banco e inicialização
 from src.utils.Connection import init_conn
-from src.database.banco_dados import start_bd
+from src.database.banco_dados import start_bd, init_db
 
 # Importação das cores
 from src.utils.Colors import NEGRITO, CINZENTO, ROXO, RESET
+
+if init_db():
+    print("DB criado com sucesso")
+else:
+    print("Erro ao criar DB")
 
 # Inicialização do banco de dados
 conexao = init_conn()

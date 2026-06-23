@@ -15,7 +15,7 @@ def menu_gerencial(conexao, cursor):
         │ [3]. Serviços Mais Procurados                   │
         │ [4]. Exportar Resumo do Dia (.TXT)              │
         ├─────────────────────────────────────────────────┤
-        │. Voltar                                         │
+        │ [0]. Voltar                                     │
         └─────────────────────────────────────────────────┘
         """)
         
