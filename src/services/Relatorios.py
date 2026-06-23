@@ -1,64 +1,66 @@
-import mysql.connector, os
+import mysql.connector, datetime
+from datetime import date
 
 from src.utils.Force import force_int
 
 from src.utils.Colors import NEGRITO, VERMELHO, VERDE, CIANO, RESET
 
-from src.utils.Connection import limpar
 
-
-def rel_faturamento(conexao, cursor):
-    limpar()
-    print("=== FATURAMENTO TOTAL ===\n")
+def rel_fat_periodo(conexao, cursor):
+    print("=== FATURAMENTO TOTAL POR PERÍODO ===\n")
+    print("Digite 0 no ano para ver o faturamento total histórico.\n")
     
-    # Soma o valor total das ordens fechadas
+    def capturar_data_valida(rotulo):
+        while True:
+            print(f"--- {rotulo} ---")
+            ano = force_int("Ano (AAAA): ")
+            if ano == 0:
+                return None
+                
+            mes = force_int("Mês (MM): ")
+            dia = force_int("Dia (DD): ")
+            
+            try:
+                return date(ano, mes, dia).strftime("%Y-%m-%d")
+            except ValueError:
+                print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Data inválida (ex: dia inexistente neste mês). Tente novamente.\n")
+
+    data_inicio = capturar_data_valida("DATA INICIAL")
+    data_fim = capturar_data_valida("DATA FINAL") if data_inicio else None
+    
+    query = "SELECT SUM(valor_total) FROM ordens_servico WHERE status = 'FECHADA'"
+    params = []
+    
+    if data_inicio:
+        query += " AND data_fechamento >= %s"
+        params.append(data_inicio)
+    if data_fim:
+        query += " AND data_fechamento <= %s"
+        params.append(data_fim)
+        
     try:
-        cursor.execute("SELECT SUM(valor_total) FROM ordens_servico WHERE status = 'FECHADA'")
+        cursor.execute(query, tuple(params))
         resultado = cursor.fetchone()
-    
         faturamento = resultado[0] if resultado and resultado[0] is not None else 0.0
         
-        print(f"Faturamento Total bruto acumulado: R$ {faturamento:,.2f}")
+        if data_inicio and data_fim:
+            periodo_str = f"de {data_inicio} até {data_fim}"
+        elif data_inicio:
+            periodo_str = f"a partir de {data_inicio}"
+        else:
+            periodo_str = "Histórico Total"
+            
+        print(f"\nFaturamento bruto acumulado ({periodo_str}): R$ {faturamento:,.2f}")
     
     except mysql.connector.Error as erro:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Não foi possível consultar o faturamento. Detalhes: {erro}")
 
     input("\nPressione Enter para voltar...")
 
-
-def rel_ordens(conexao, cursor):
-    limpar()
-    print("=== ORDENS REALIZADAS ===\n")
-
-    try:
-        # Conta ordens por status
-        cursor.execute("""
-            SELECT status, COUNT(*), SUM(valor_total) 
-            FROM ordens_servico 
-            GROUP BY status
-        """)
-        resultados = cursor.fetchall()
-
-        if not resultados:
-            print(f"\n{NEGRITO}{CIANO}INFO:{RESET} Nenhuma ordem de serviço registrada.")
-        else:
-            for status, qtd, total in resultados:
-                total = total or 0.0
-                print(f"Status: {status:<10} | Quantidade: {qtd:<3} | Total acumulado: R$ {total:,.2f}")
-            
-
-    except mysql.connector.Error as erro:
-        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Não foi possível listar as ordens. Detalhes: {erro}")
-
-    input("\nPressione Enter para voltar...")
-
-
 def rel_pecas(conexao, cursor):
-    limpar()
-    print("=== PEÇAS MAIS UTILIZADAS ===\n")
+    print("=== PEÇAS MAIS VENDIDAS (TOP 5) ===\n")
     
     try:
-        # Agrupa por peça na tabela de itens
         cursor.execute("""
             SELECT p.nome, SUM(oi.quantidade) as total_usado
             FROM os_itens oi
@@ -70,11 +72,10 @@ def rel_pecas(conexao, cursor):
         resultados = cursor.fetchall()
         
         if not resultados:
-            print(f"\n{NEGRITO}{CIANO}INFO:{RESET} Nenhuma peça utilizada em ordens de serviço até o momento.")
+            print(f"{NEGRITO}{CIANO}INFO:{RESET} Nenhuma peça utilizada em ordens de serviço até o momento.")
         else:
             for nome, qtd in resultados:
                 print(f"Peça: {nome:<30} | Quantidade Utilizada: {qtd}")
-
 
     except mysql.connector.Error as erro:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao buscar peças utilizadas. Detalhes: {erro}")
@@ -83,12 +84,9 @@ def rel_pecas(conexao, cursor):
 
 
 def rel_servicos(conexao, cursor):
-    limpar()
-    print("=== SERVIÇOS MAIS REALIZADOS ===\n")
+    print("=== SERVIÇOS MAIS PROCURADOS ===\n")
     
-
     try:
-        # Agrupa por serviço na tabela de itens
         cursor.execute("""
             SELECT s.descricao, COUNT(oi.id) as total_vezes
             FROM os_itens oi
@@ -100,101 +98,42 @@ def rel_servicos(conexao, cursor):
         resultados = cursor.fetchall()
         
         if not resultados:
-            print(f"\n{NEGRITO}{CIANO}INFO:{RESET} Nenhum serviço executado em ordens de serviço até o momento.")
+            print(f"{NEGRITO}{CIANO}INFO:{RESET} Nenhum serviço executado em ordens de serviço até o momento.")
         else:
             for desc, qtd in resultados:
                 print(f"Serviço: {desc:<30} | Executado: {qtd} vez(es)")
                 
     except mysql.connector.Error as erro:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao buscar serviços executados. Detalhes: {erro}")
-
             
     input("\nPressione Enter para voltar...")
-
-
-def rel_cliente(conexao, cursor):
-    limpar()
-    print("=== CLIENTE QUE MAIS GASTOU ===\n")
-    
-    try:
-        # Junta ordens, veículos e clientes para somar gastos de ordens FECHADAS
-        cursor.execute("""
-            SELECT c.nome, SUM(os.valor_total) as total_gasto
-            FROM ordens_servico os
-            JOIN veiculos v ON os.veiculo_id = v.id
-            JOIN clientes c ON v.cliente_id = c.id
-            WHERE os.status = 'FECHADA'
-            GROUP BY c.id
-            ORDER BY total_gasto DESC
-            LIMIT 1
-        """)
-        resultado = cursor.fetchone()
-
-        if resultado and resultado[0] is not None:
-            print(f"Melhor Cliente: {resultado[0]} | Total Investido: R$ {resultado[1]:,.2f}")
-        else:
-            print(f"\n{NEGRITO}{CIANO}INFO:{RESET} Nenhuma ordem fechada encontrada no sistema.")
-    
-    except mysql.connector.Error as erro:
-        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao identificar o cliente. Detalhes: {erro}")
-
-    input("\nPressione Enter para voltar...")
-
-
-def rel_veiculos(conexao, cursor):
-    limpar()
-    print("=== VEÍCULOS ATENDIDOS ===\n")
-
-    
-    try:
-        # Lista veículos com ordens registradas
-        cursor.execute("""
-            SELECT v.placa, v.marca, v.modelo, COUNT(os.id) as passagens
-            FROM ordens_servico os
-            JOIN veiculos v ON os.veiculo_id = v.id
-            GROUP BY v.id
-            ORDER BY passagens DESC
-        """)
-        resultados = cursor.fetchall()
-            
-        if not resultados:
-            print(f"\n{NEGRITO}{CIANO}INFO:{RESET} Nenhum veículo com histórico de atendimento.")
-
-        else:
-            for placa, marca, modelo, qtd in resultados:
-                print(f"Placa: {placa} | {marca} {modelo:<15} | Atendimentos: {qtd}")
-
-    except mysql.connector.Error as erro:
-        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao listar veículos atendidos. Detalhes: {erro}")
-            
-    input("\nPressione Enter para voltar...")
-
 
 def exp_txt(conexao, cursor):
-    limpar()
-    print("=== EXPORTAR RELATÓRIO TXT ===\n")
+    print("=== EXPORTAR RELATÓRIO DO DIA (.TXT) ===\n")
+
+    hoje = datetime.datetime.now().strftime('%Y-%m-%d')
     
     try:
-        cursor.execute("SELECT SUM(valor_total) FROM ordens_servico WHERE status = 'FECHADA'")
+        # Faturamento de hoje
+        cursor.execute("SELECT SUM(valor_total) FROM ordens_servico WHERE status = 'FECHADA' AND DATE(data_fechamento) = %s", (hoje,))
         res_faturamento = cursor.fetchone()
-        faturamento = res_faturamento[0] if res_faturamento and res_faturamento[0] is not None else 0.0
+        faturamento_hoje = res_faturamento[0] if res_faturamento and res_faturamento[0] is not None else 0.0
         
-        cursor.execute("SELECT COUNT(*) FROM veiculos WHERE ativo = 1")
-        res_veiculo = cursor.fetchone()
-        qtd_veiculo = res_veiculo[0] if res_veiculo else 0
-        
-        with open("resumo_oficina.txt", "w", encoding="utf-8") as f:
-            f.write("=== RELATÓRIO GERAL DA OFICINA ===\n\n")
-            f.write(f"Faturamento Total Bruto: R$ {faturamento:,.2f}\n")
-            f.write(f"Total: {qtd_veiculo} veículos ativos cadastrados\n")
+        # OS fechadas hoje
+        cursor.execute("SELECT COUNT(*) FROM ordens_servico WHERE status = 'FECHADA' AND DATE(data_fechamento) = %s", (hoje,))
+        qtd_os_hoje = cursor.fetchone()[0]
+
+        nome_arquivo = f"resumo_oficina_{hoje}.txt"
+        with open(nome_arquivo, "w", encoding="utf-8") as f:
+            f.write(f"=== RELATÓRIO DIÁRIO DA OFICINA ({hoje}) ===\n\n")
+            f.write(f"Faturamento Bruto do Dia: R$ {faturamento_hoje:,.2f}\n")
+            f.write(f"Ordens de Serviço Fechadas Hoje: {qtd_os_hoje}\n")
             
-        print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Arquivo 'resumo_oficina.txt' gerado com sucesso na raiz do projeto!")
+        print(f"{NEGRITO}{VERDE}SUCESSO:{RESET} Arquivo '{nome_arquivo}' gerado com sucesso na raiz do projeto!")
 
     except mysql.connector.Error as erro_bd:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Não foi possível ler dados para exportar. Detalhes: {erro_bd}")
-
     except IOError as erro_arquivo:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Não foi possível gravar o arquivo TXT. Detalhes: {erro_arquivo}")
-
             
     input("\nPressione Enter para voltar...")

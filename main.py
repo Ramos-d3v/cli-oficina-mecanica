@@ -1,125 +1,83 @@
-from src.utils.Force import force_int, force_str, force_float
-from ui.menu_principal import menu_principal, menu_cli, menu_ord_servic, menu_relat, pecas, servicos, layout_veic
-
-# Importação correta das funções de Ordens de Serviço (OS)
-from src.services.servicos_os import abrir_os, adicionar_peca, adicionar_servico, visualizar_os, fechar_os, cancelar_os, listar_os_abertas
-
-from src.services.veiculos import menu_veic
-
-from src.services.Relatorios import rel_faturamento, rel_ordens, rel_pecas, rel_servicos, rel_cliente, rel_veiculos, exp_txt
-
-# Importação clientes
-from src.services.ClientesServices import alterar_cliente, cadastrar_cliente, consultar_cliente, desativar_cliente, listar_clientes
+from src.utils.Force import force_float, force_id, force_int, force_str, listar_ids
+from src.ui.menu_principal import menu_principal
+from src.ui.Menu_Relatorios import menu_gerencial
+from src.ui.menu_estoque import controle_estoque
+from src.ui.menu_cadastrar import cadastro_geral
+from src.ui.menus_servicos_os.Menu_entrada_rapida import fluxo_entrada_rapida
+from src.ui.menus_servicos_os.Menu_Servicos_os import menu_servicos_os
+from src.services.servicos_os import listar_os_abertas
 
 # Funções de proteção
 from src.utils.protecao import obter_ano, obter_cpf, obter_placa
 
-# Função de conexão com o banco de dados
-from src.utils.Connection import init_conn
 
-# Importação do banco de dados
+
+# Conexão com banco e inicialização
+from src.utils.Connection import init_conn
 from src.database.banco_dados import start_bd
 
 # Importação das cores
 from src.utils.Colors import NEGRITO, CINZENTO, ROXO, RESET
 
-
+# Inicialização do banco de dados
 conexao = init_conn()
 cursor = conexao.cursor()
 start_bd(conexao, cursor)
 
-
 while True:
-    #função que mostra os comando.
-    
-    #inicia a conexão e o cursor toda vez que rodar o codigo para garantir 
-    
-
+    # Garante que a conexão e o cursor estão ativos toda vez que rodar o loop
+    if not conexao.is_connected():
+        conexao = init_conn()
+        cursor = conexao.cursor()
+        
     menu_principal()
-
-    comando =  force_int("Escolha a opção desejada: ")
-
+    
+    comando = force_int("Escolha a opção desejada: ")
+    
     match comando:
         case 0:
-        # Direciona para o arquivo/função de Clientes
             print(f"\n{NEGRITO}{ROXO}INFO:{RESET} Encerrando o sistema... Até logo!")
             break
-        
+            
         case 1:
-        # Direciona para o arquivo/função de Clientes
-            menu_cli(conexao, cursor)
-        
+            # [1]. ENTRADA RÁPIDA (Nova Venda / OS)
+            fluxo_entrada_rapida(conexao, cursor)
+            
         case 2:
-         # Direciona para o arquivo/função de Veículos
-            menu_veic(conexao, cursor)
-        
-        case 3:
-        # Direciona para o arquivo/função de Peças (Estoque)
-            pecas()
-
-        case 4:
-        # Direciona para o arquivo/função de Serviços (Catálogo)
-            servicos()
-        
-        case 5:
-        # Direciona para o arquivo/função de Ordens de Serviço (Fluxo principal)
-            menu_ord_servic()
-            comand_ord_servic = force_int("Coloque o que deseja fazer: ")
-            match comand_ord_servic:
-                case 1:
-                    abrir_os(conexao, cursor)
-                case 2:
-                    adicionar_peca(conexao, cursor)
-                case 3:
-                    adicionar_servico(conexao, cursor)
-                case 4:
-                    visualizar_os(conexao, cursor)
-                case 5:
-                    fechar_os(conexao, cursor)
-                case 6:
-                    cancelar_os(conexao, cursor)
-                case 7:
-                    listar_os_abertas(conexao, cursor)
-        case 6:
-        # Direciona para o arquivo/função de Relatórios e Consultas
-            while True:
-                menu_relat() 
-                comand_relat = force_int("Escolha o relatório desejado: ")
+            # [2]. GERENCIAR ORDENS DE SERVIÇO
+            # Lista as OS abertas e pede o ID para abrir o menu de carrinho/vendas
+            listar_os_abertas(conexao, cursor)
+            id_os = force_int("\nDigite o ID da OS que deseja gerenciar (ou 0 para voltar): ")
+            if id_os != 0:
+                menu_servicos_os(conexao, cursor, id_os)
                 
-                if comand_relat == 0:
-                    print("\nVoltando ao menu principal...")
-                    break 
-                match comand_relat:
-                    case 1: rel_faturamento(conexao, cursor)
-                    case 2: rel_ordens(conexao, cursor)
-                    case 3: rel_pecas(conexao, cursor)
-                    case 4: rel_servicos(conexao, cursor)
-                    case 5: rel_cliente(conexao, cursor)
-                    case 6: rel_veiculos(conexao, cursor)
-                    case 7: exp_txt(conexao, cursor)
-                    case _: input("\nOpção inválida! Pressione Enter para tentar novamente...")
+        case 3:
+            # [3]. GERENCIAR ESTOQUE & PREÇOS (Peças e Serviços)
+            controle_estoque(conexao, cursor)
+            
+        case 4:
+            # [4]. CADASTROS DE APOIO (Clientes e Veículos)
+            cadastro_geral(conexao, cursor)
+            
+        case 5:
+            # [5]. RELATÓRIOS & GERENCIAL
+            menu_gerencial(conexao, cursor)
             
         case _:
-        # Este caso captura QUALQUER número que não seja de 0 a 6
+            # Captura qualquer número fora das opções
             input("\nOpção inválida! Pressione Enter para tentar novamente.")
+            continue # Reinicia o loop sem mostrar a interface de pausa
 
-
-   
-         
-   #bloco de pausa
+    # Bloco de pausa e navegação pós-comando
     print(f"""{CINZENTO}
-    ┌───────────────────────────────┐
     | [1] Fechar o sistema          |
-    |───────────────────────────────|
     | [2] Voltar ao menu principal  |
-    └───────────────────────────────┘
     {RESET}""")
+    
     try:
-        acao_pos_comando = int(input("O que deseja fazer agora? "))
+        acao_pos_comando = force_int("O que deseja fazer agora? ")
         if acao_pos_comando == 1:
             print(f"\n{NEGRITO}{ROXO}INFO:{RESET} Encerrando o sistema.")
             break
     except ValueError:
-        pass            
-    
-  
+        pass

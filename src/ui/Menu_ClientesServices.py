@@ -1,6 +1,7 @@
 from src.utils.Force import force_int, force_id,force_float,force_str
 from src.utils.Force import listar_ids
-
+from src.utils.protecao import obter_cpf
+from src.services.ClientesServices import alterar_cliente,cadastrar_cliente,consultar_cliente,desativar_cliente,listar_clientes
 
 def menu_cli(conexao, cursor):
     print("""
@@ -16,7 +17,7 @@ def menu_cli(conexao, cursor):
 │  [0]. Voltar                                    │
 └─────────────────────────────────────────────────┘
     """)
-
+    listar_ids("clientes")
     
     command_cli = force_int("Coloque o que deseja fazer: ")
     match command_cli:
@@ -50,14 +51,12 @@ def menu_cli(conexao, cursor):
                 elif opcao == 3:
                     break
         case 3:
-            listar_ids("clientes")
             id_cliente = force_id("clientes","Coloque o id do cliente que deseja alterar: ")
             novo_nome = force_str("Coloque o novo nome: ")
             novo_telefone = force_str("Coloque o novo telefone do cliente: ")
             novo_cpf = obter_cpf("Coloque o novo cpf do cliente: ")
             alterar_cliente(conexao, cursor, id_cliente,novo_nome, novo_telefone, novo_cpf)    
         case 4:
-            listar_ids("clientes")
             id_cliente = force_id("clientes","Coloque o id do cliente que deseja desativar: ")
             desativar_cliente(conexao, cursor, id_cliente)
         case 5:

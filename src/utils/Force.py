@@ -73,7 +73,8 @@ COLUNAS_EXIBICAO = {
     "pecas": ["nome"],
     "servicos": ["descricao", "mao_de_obra"],
     "clientes": ["nome", "telefone"],
-    "veiculos": ["placa", "modelo"]
+    "veiculos": ["placa", "modelo"],
+    "ordens_servico": ["status", "valor_total"]
 }
 
 
@@ -109,11 +110,11 @@ def listar_ids(nome_tabela: str):
             print(f"\n{NEGRITO}{CIANO}INFO:{RESET} Nenhum registro ativo encontrado na tabela '{nome_tabela}'.")
             return
 
-        print(f"\n============================ {nome_tabela.upper()} ==============================")
+        print(f"\n{NEGRITO}{CIANO} ============================{nome_tabela.upper()} =============================={RESET}")
 
         for registro in registros:
             dados = " | ".join(str(campo) for campo in registro[1:])
-            print(f"ID: {registro[0]} | {dados}")
+            print(f"{NEGRITO} ID: {registro[0]} | {dados} {RESET}")
 
         print("=" * 40)
 

@@ -1,7 +1,6 @@
-from src.utils.Force import force_id,force_int,force_float,force_str, listar_ids
+from src.utils.CrudGeneric import generic_cadastrar,generic_consultar,generic_desativar,generic_listar
+from src.utils.Colors import NEGRITO, AMARELO, VERMELHO, VERDE, CIANO, RESET 
 
-from src.utils.CrudGeneric import generic_alterar,generic_cadastrar,generic_consultar,generic_desativar,generic_listar
-   
 
 def cadastrar_peca(cursor, conexao, dados):
     """
@@ -10,36 +9,22 @@ def cadastrar_peca(cursor, conexao, dados):
     
     resultado = generic_cadastrar(conexao, cursor, 'pecas', dados)
     if resultado:
-        print("Peça cadastrada!")
+        print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Peça cadastrada com sucesso!")
+
     else:
-        print("Erro ao cadastrar peça.")
+        print(f"\n{NEGRITO}{VERMELHO}[ERRO]{RESET} Não foi possível cadastrar a peça.")
 
 
-def repor_estoque(cursor, conexao):
-    """
-    Função para reposição de estoque de peças
-    """
-    #retorna uma lista das peças
-    listar_ids("pecas")
+def repor_estoque(cursor, conexao, id_peca, qtd):
 
-    id_peca = force_id("pecas","ID da peça (0 para voltar): ")
-
-    if id_peca is None:
-        return
-    cursor.execute("SELECT quantidade FROM pecas WHERE id = %s", (id_peca,) )
-    
-    quantidade_atual = cursor.fetchone()[0]
-
-    qtd = force_int(f"Digite a quantidade que deseja adicionar (estoque atual: {quantidade_atual}): ")
-    
-    if qtd <= 0:
-        print("Quantidade inválida")
-        return
-
-    cursor.execute("SELECT 1 FROM pecas WHERE id = %s AND ativo = 1", (id_peca,))
+    cursor.execute(
+        "SELECT 1 FROM pecas WHERE id = %s AND ativo = 1",
+        (id_peca,)
+    )
 
     if not cursor.fetchone():
-        print("Peça não encontrada")
+        print(f"\n{NEGRITO}{AMARELO}[AVISO]{RESET} Peça não encontrada no sistema.")
+
         return
 
     cursor.execute("""
@@ -49,46 +34,19 @@ def repor_estoque(cursor, conexao):
     """, (qtd, id_peca))
 
     conexao.commit()
-    print("Estoque atualizado!")
+    print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Estoque atualizado com sucesso!")
 
 
-def alterar_preco(cursor, conexao):
-    
-    """
-    Função para alterar preço de peças
-    """
 
-    listar_ids("pecas")
+def alterar_preco(cursor, conexao, id_peca, novo_preco):
 
-    id_peca = force_id("pecas","ID da peça (0 para voltar): ")
-
-    if id_peca is None:
-        return
-
-    cursor.execute("SELECT nome, preco_custo, preco_venda FROM pecas WHERE id = %s", (id_peca,) )
-    
-    resultado = cursor.fetchone()
-
-    if not resultado:
-        print("Peça não encontrada.")
-        return
-
-    print(f"""
-    Peça selecionada: {resultado[0]}
-    Preço de custo : R$ {resultado[1]:.2f}
-    Preço de venda : R$ {resultado[2]:.2f}
-    """)
-
-    novo_preco = force_float("Digite o novo preço de venda: ")    
-
-    if novo_preco <= 0:
-        print("Preço inválido")
-        return
-
-    cursor.execute("SELECT 1 FROM pecas WHERE id = %s AND ativo = 1", (id_peca,))
+    cursor.execute(
+        "SELECT 1 FROM pecas WHERE id = %s AND ativo = 1",
+        (id_peca,)
+    )
 
     if not cursor.fetchone():
-        print("Peça não encontrada")
+        print(f"\n{NEGRITO}{AMARELO}[AVISO]{RESET} Peça não encontrada no sistema.")
         return
 
     cursor.execute("""
@@ -98,27 +56,29 @@ def alterar_preco(cursor, conexao):
     """, (novo_preco, id_peca))
 
     conexao.commit()
-    print("Preço atualizado!")
+    print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Preço atualizado com sucesso!")
 
 
 def consultar_peca(cursor, id_peca):
-
-    listar_ids("pecas")    
-    
+  
     peca = generic_consultar(cursor, 'pecas', 'id', id_peca)
 
     if not peca:
-        print("Peça não encontrada")
+        print(f"\n{NEGRITO}{AMARELO}[AVISO]{RESET} Peça não encontrada no sistema.")
         return
 
-    print(f"""
-    ID: {peca[0]}
-    Nome: {peca[1]}
-    Fornecedor: {peca[2]}
-    Custo: R$ {peca[3]:.2f}
-    Venda: R$ {peca[4]:.2f}
-    Qtd: {peca[5]}
-    """)
+    print(f"\n{NEGRITO}{CIANO}================= DADOS DA PEÇA ================={RESET}")
+    custo_formatado = f"R$ {peca[3]:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    venda_formatado = f"R$ {peca[4]:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    print(f"{NEGRITO}ID do Registro:{RESET}  {peca[0]}")
+    print(f"{NEGRITO}Nome da Peça:{RESET}    {peca[1]}")
+    print(f"{NEGRITO}Fornecedor:{RESET}      {peca[2]}")
+    print(f"{NEGRITO}Preço de Custo:{RESET}  {custo_formatado}")
+    print(f"{NEGRITO}Preço de Venda:{RESET}  {venda_formatado}")
+    print(f"{NEGRITO}Quantidade:{RESET}      {peca[5]} unidade(s)")
+    print(f"{NEGRITO}{CIANO}================================================={RESET}")
+
 
 
 def desativar_peca(cursor, conexao, id_peca):
@@ -127,10 +87,10 @@ def desativar_peca(cursor, conexao, id_peca):
     resultado = generic_desativar(conexao, cursor, 'pecas', id_peca)
 
     if not resultado:
-        print("Peça não encontrada.")
+        print(f"\n{NEGRITO}{AMARELO}[AVISO]{RESET} Peça não encontrada no sistema.")
         return
 
-    print("Peça desativada!")
+    print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Peça desativada com sucesso!")
 
 
 
@@ -142,5 +102,10 @@ def listar_estoque(cursor, apenas_ativos: bool = True):
         p = generic_listar(cursor, 'pecas', apenas_ativos)
     
 
+    print(f"\n{NEGRITO}{CIANO}=========================== ESTOQUE DE PEÇAS ==========================={RESET}")
+
     for item in p:
-        print(f"{item[0]} - {item[1]} | Qtd: {item[5]} | Venda: R$ {item[4]:.2f}")
+        venda_formatado = f"R$ {item[4]:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        peca_info = f"{item[0]} - {item[1]}"
+        print(f"{peca_info:<40} | {NEGRITO}Qtd:{RESET} {item[5]:<4} | {NEGRITO}Venda:{RESET} {venda_formatado}")
+    print(f"{NEGRITO}{CIANO}========================================================================{RESET}")
