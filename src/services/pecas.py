@@ -1,57 +1,37 @@
-from src.utils.Force import force_id,force_int,force_float,force_str
+from src.utils.Force import force_id,force_int,force_float,force_str, listar_ids
 
+from src.utils.CrudGeneric import generic_alterar,generic_cadastrar,generic_consultar,generic_desativar,generic_listar
+   
 
-def cadastrar_peca(cursor, conexao):
+def cadastrar_peca(cursor, conexao, dados):
     """
     Função para cadastrar as peças
     """
     
-    nome = input("Nome da peça: ").strip()
-    fornecedor = input("Fornecedor: ").strip()
-
-    if not nome or not fornecedor:
-        print("ERRO: campos obrigatórios.")
-        return
-
-    preco_custo = force_float("Preço de custo: ")
-    preco_venda = force_float("Preço de venda: ")
-    quantidade = force_int("Quantidade: ")
-
-    if preco_custo <= 0 or preco_venda <= 0 or quantidade <= 0:
-        print("ERRO: valores inválidos.")
-        return
-
-    cursor.execute(
-        "SELECT 1 FROM pecas WHERE nome = %s AND ativo = 1",
-        (nome,)
-    )
-
-    if cursor.fetchone():
-        print("ERRO: Peça já cadastrada.")
-        return
-
-    cursor.execute("""
-        INSERT INTO pecas (nome, fornecedor, preco_custo, preco_venda, quantidade)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (nome, fornecedor, preco_custo, preco_venda, quantidade))
-
-    conexao.commit()
-    print("Peça cadastrada!")
-
+    resultado = generic_cadastrar(conexao, cursor, 'pecas', dados)
+    if resultado:
+        print("Peça cadastrada!")
+    else:
+        print("Erro ao cadastrar peça.")
 
 
 def repor_estoque(cursor, conexao):
     """
     Função para reposição de estoque de peças
     """
-    try:
-        id_peca = force_id("ID da peça: ")
-    except ValueError:
-        print("ID inválido")
+    #retorna uma lista das peças
+    listar_ids("pecas")
+
+    id_peca = force_id("pecas","ID da peça (0 para voltar): ")
+
+    if id_peca is None:
         return
+    cursor.execute("SELECT quantidade FROM pecas WHERE id = %s", (id_peca,) )
+    
+    quantidade_atual = cursor.fetchone()[0]
 
-    qtd = force_int("Quantidade: ")
-
+    qtd = force_int(f"Digite a quantidade que deseja adicionar (estoque atual: {quantidade_atual}): ")
+    
     if qtd <= 0:
         print("Quantidade inválida")
         return
@@ -77,12 +57,29 @@ def alterar_preco(cursor, conexao):
     """
     Função para alterar preço de peças
     """
-    try:
-        id_peca = force_id("ID da peça: ")
-        novo_preco = force_int("Novo preço: ")
-    except ValueError:
-        print("Valor inválido")
+
+    listar_ids("pecas")
+
+    id_peca = force_id("pecas","ID da peça (0 para voltar): ")
+
+    if id_peca is None:
         return
+
+    cursor.execute("SELECT nome, preco_custo, preco_venda FROM pecas WHERE id = %s", (id_peca,) )
+    
+    resultado = cursor.fetchone()
+
+    if not resultado:
+        print("Peça não encontrada.")
+        return
+
+    print(f"""
+    Peça selecionada: {resultado[0]}
+    Preço de custo : R$ {resultado[1]:.2f}
+    Preço de venda : R$ {resultado[2]:.2f}
+    """)
+
+    novo_preco = force_float("Digite o novo preço de venda: ")    
 
     if novo_preco <= 0:
         print("Preço inválido")
@@ -104,20 +101,11 @@ def alterar_preco(cursor, conexao):
     print("Preço atualizado!")
 
 
-def consultar_peca(cursor):
-    try:
-        id_peca = force_id("ID da peça: ")
-    except ValueError:
-        print("ID inválido")
-        return
+def consultar_peca(cursor, id_peca):
 
-    cursor.execute("""
-        SELECT id, nome, fornecedor, preco_custo, preco_venda, quantidade
-        FROM pecas
-        WHERE id = %s AND ativo = 1
-    """, (id_peca,))
-
-    peca = cursor.fetchone()
+    listar_ids("pecas")    
+    
+    peca = generic_consultar(cursor, 'pecas', 'id', id_peca)
 
     if not peca:
         print("Peça não encontrada")
@@ -133,36 +121,26 @@ def consultar_peca(cursor):
     """)
 
 
-def desativar_peca(cursor, conexao):
-    try:
-        id_peca = force_id("ID da peça: ")
-    except ValueError:
-        print("ID inválido")
+def desativar_peca(cursor, conexao, id_peca):
+
+    
+    resultado = generic_desativar(conexao, cursor, 'pecas', id_peca)
+
+    if not resultado:
+        print("Peça não encontrada.")
         return
 
-    cursor.execute("SELECT 1 FROM pecas WHERE id = %s AND ativo = 1", (id_peca,))
-
-    if not cursor.fetchone():
-        print("Peça não encontrada")
-        return
-
-    cursor.execute("""
-        UPDATE pecas
-        SET ativo = 0
-        WHERE id = %s AND ativo = 1
-    """, (id_peca,))
-
-    conexao.commit()
     print("Peça desativada!")
 
 
-def listar_estoque(cursor):
-    cursor.execute("""
-        SELECT id, nome, quantidade, preco_venda
-        FROM pecas
-        WHERE ativo = 1
-        ORDER BY nome
-    """)
 
-    for p in cursor.fetchall():
-        print(f"{p[0]} - {p[1]} | Qtd: {p[2]} | R$ {p[3]:.2f}")
+def listar_estoque(cursor, apenas_ativos: bool = True):
+    
+    if apenas_ativos:
+        p = generic_listar(cursor, 'pecas')
+    else:
+        p = generic_listar(cursor, 'pecas', apenas_ativos)
+    
+
+    for item in p:
+        print(f"{item[0]} - {item[1]} | Qtd: {item[5]} | Venda: R$ {item[4]:.2f}")

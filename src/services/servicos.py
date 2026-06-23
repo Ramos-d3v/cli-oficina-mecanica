@@ -1,83 +1,27 @@
 from src.utils.Force import force_id,force_int,force_float,force_str
+from src.utils.Force import listar_ids
+from src.utils.CrudGeneric import generic_alterar,generic_cadastrar,generic_consultar,generic_desativar,generic_listar
 
 
+def cadastrar_servico(cursor, conexao, dados):
 
-def cadastrar_servico(cursor, conexao):
+    resposta = generic_cadastrar(conexao, cursor,'servicos', dados)
+    if resposta:
+        print("Serviço cadastrado!")
+    else:
+        print("Erro ao cadastrar serviço.")
 
-    descricao = input("Descrição do serviço: ").strip()
+def alterar_servico(cursor, conexao, dados_novos, id_registro):
 
-  
-    mao_de_obra = force_float("Valor da mão de obra: ")
-    
-    tempo = input("Tempo estimado: ").strip()
-
-    if not descricao:
-        print("❌ ERRO: descrição vazia")
-        return
-
-    if mao_de_obra <= 0:
-        print("❌ ERRO: valor inválido")
-        return
-
-    if not tempo:
-        print("❌ ERRO: Tempo vazio")
-        return
-
-    # verifica duplicado
-    cursor.execute(
-        "SELECT 1 FROM servicos WHERE descricao = %s AND ativo = 1",
-        (descricao,)
-    )
-
-    if cursor.fetchone():
-        print("❌ ERRO: Serviço já existe")
-        return
-
-    cursor.execute("""
-        INSERT INTO servicos (descricao, mao_de_obra, tempo_estimado)
-        VALUES (%s, %s, %s)
-    """, (descricao, mao_de_obra, tempo))
-
-    conexao.commit()
-    print("Serviço cadastrado!")
-
-
-
-def alterar_servico(cursor, conexao):
-
-    
-    id_servico = force_id("servicos","ID do serviço: ")
-    
-
-    novo_valor = force_float("Novo valor da mão de obra: ")
-    
-
-    if novo_valor <= 0:
-        print("❌ ERRO: Valor inválido")
-        return
-
-    cursor.execute(
-        "SELECT 1 FROM servicos WHERE id = %s AND ativo = 1",
-        (id_servico,)
-    )
-
-    if not cursor.fetchone():
-        print("❌ ERRO: Serviço não encontrado")
-        return
-
-    cursor.execute("""
-        UPDATE servicos
-        SET mao_de_obra = %s
-        WHERE id = %s AND ativo = 1
-    """, (novo_valor, id_servico))
-
-    conexao.commit()
-    print("Serviço atualizado!")
+    generic_alterar(conexao, cursor, 'servicos', dados_novos, id_registro)
 
 
 def consultar_servico(cursor):
+    listar_ids("servicos")
+    id_servico = force_id("servicos","ID do serviço (0 para voltar): ")
 
-    id_servico = force_id("servicos","ID do serviço: ")
+    if id_servico is None:
+        return
     
     cursor.execute("""
         SELECT id, descricao, mao_de_obra, tempo_estimado
@@ -99,11 +43,10 @@ def consultar_servico(cursor):
     """)
 
 def desativar_servico(cursor, conexao):
+    listar_ids("servicos")
+    id_servico = force_id("servicos","ID do serviço (0 para voltar): ")
 
-    try:
-        id_servico = force_id("servicos","ID do serviço: ")
-    except ValueError:
-        print("❌ ERRO: ID inválido")
+    if id_servico is None:
         return
 
     cursor.execute(

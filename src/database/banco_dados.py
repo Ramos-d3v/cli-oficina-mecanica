@@ -1,5 +1,6 @@
 import mysql.connector
 
+from src.utils.Colors import NEGRITO, VERMELHO_B, RESET
 from src.utils.Connection import init_conn
 
 #Estrutura inicial do banco de dados
@@ -7,15 +8,7 @@ def start_bd(conexao, cursor):
 
     cursor.execute("CREATE DATABASE IF NOT EXISTS oficina")
     cursor.execute("USE oficina")
-
-    cursor.close()
-    conexao.close()
-
-
-    conexao = init_conn()
-
-    cursor = conexao.cursor()  
-
+    
     try:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS clientes (
@@ -154,7 +147,6 @@ def start_bd(conexao, cursor):
             """, clientes_iniciais)
 
 
-
         cursor.execute("SELECT COUNT(*) FROM veiculos")
 
         if cursor.fetchone()[0] == 0:
@@ -174,12 +166,9 @@ def start_bd(conexao, cursor):
 
     except mysql.connector.Error as erro:
         conexao.rollback()
-        print(f"\n[FALHA DE SISTEMA] Erro crítico no arquivo 'banco_dados'.")
-        print("Ação: Conexão cancelada e alterações revertidas (rollback).")
-        print(f"Detalhes técnicos: {erro}\n")
-        
+        print(f"\n{NEGRITO}{VERMELHO_B}CRÍTICO:{RESET} Falha de sistema. Erro crítico no arquivo 'banco_dados'.")
+        print(f"{NEGRITO}{VERMELHO_B}AÇÃO:{RESET} Conexão cancelada e alterações revertidas (rollback).")
+        print(f"{NEGRITO}Detalhes técnicos:{RESET} {erro}\n")
 
-    finally:
-        if 'conexao' in locals() and conexao.is_connected():
-            cursor.close()
-            conexao.close()
+        
+            

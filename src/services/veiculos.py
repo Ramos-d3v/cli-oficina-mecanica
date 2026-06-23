@@ -1,11 +1,14 @@
 import mysql.connector
 from src.utils.protecao import obter_placa, texto_valido, obter_ano, obter_cpf
 from src.utils.Force import force_int
+from ui.menu_principal import layout_veic
+from src.utils.Force import listar_ids
 
 
 def menu_veic(conexao, cursor):
     while True:
-             
+        
+        layout_veic()
         comando = force_int("Escolha uma opção: ")
         
         match comando:
@@ -49,6 +52,8 @@ def menu_veic(conexao, cursor):
                 
             case 2:
                 print("\n/////// [2] BUSCAR VEÍCULO POR PLACA")
+
+                listar_ids("veiculos")
                 placa_busca = obter_placa("Digite a placa que deseja buscar: ")
                 
                 cursor = None
@@ -114,7 +119,7 @@ def menu_veic(conexao, cursor):
 
             case 4:
                 print("\n/////// [4] ATUALIZAR QUILOMETRAGEM E VERIFICAR ÓLEO")
-                
+                listar_ids("veiculos")
                 # Coleta de dados blindada pelas funções de validação
                 placa = obter_placa("Digite a placa do veículo: ")
                 nova_km = force_int("Digite a nova quilometragem atual: ")
@@ -168,6 +173,7 @@ def menu_veic(conexao, cursor):
             case 5:
                 print("\n/////// [5] ALTERAR DADOS DO VEÍCULO")
                 
+                listar_ids("veiculos")
                 # Localização: Qual carro vamos consertar?
                 placa = obter_placa("Digite a placa do veículo que deseja alterar: ")
                 
@@ -210,6 +216,7 @@ def menu_veic(conexao, cursor):
             case 6:
                 print("\n/////// [6] DESATIVAR VEÍCULO")
                 
+                listar_ids("veiculos")
                 # Qual carro vamos desativar?
                 placa = obter_placa("Digite a placa do veículo que deseja desativar: ")
                 
@@ -230,7 +237,7 @@ def menu_veic(conexao, cursor):
                         
                 except mysql.connector.Error as erro:
                     print(f"\n❌ Erro ao desativar o veículo: {erro}")
-                    print("💡 Dica: Se o erro for 'coluna inexistente', mude o comando para DELETE no código.")
+                    #print("💡 Dica: Se o erro for 'coluna inexistente', mude o comando para DELETE no código.")
                     
                 finally:
                     if cursor:
