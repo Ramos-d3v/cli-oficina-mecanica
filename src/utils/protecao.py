@@ -16,14 +16,13 @@ def texto_valido(mensagem):
     
 
 def obter_cpf(mensagem):
-    #Garante que o CPF tenha apenas números e exatamente 11 dígitos
-
+    # Garante que o CPF tenha apenas números e exatamente 11 dígitos
     while True:
-        #Remove pontos e traços caso o funcionário digite por hábito
+        # Remove pontos e traços caso o funcionário digite por hábito
         cpf = input(mensagem).strip().replace(".", "").replace("-", "")
         
-        if not cpf.isdigit():
-            print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Este campo não pode conter apenas números.")
+        if not cpf.isdigit(): # .isdigit verifica se foi digitado APENAS números
+            print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} O CPF deve conter apenas números.")
             continue
 
         if len(cpf) != 11:
@@ -56,3 +55,14 @@ def obter_placa(mensagem):
             return placa
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Placa inválida. Deve conter exatamente 7 caracteres (Ex: ABC1234 ou ABC1D23).")
 
+
+
+def dado_ja_existe(cursor, tabela: str, coluna: str, valor: str) -> bool:
+   # Verifica se um determinado valor já está cadastrado e ativo em uma tabela.
+  
+    try:
+        query = f"SELECT 1 FROM {tabela} WHERE {coluna} = %s AND ativo = 1"
+        cursor.execute(query, (valor,))
+        return cursor.fetchone() is not None
+    except Exception:
+        return False

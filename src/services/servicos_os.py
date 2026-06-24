@@ -1,8 +1,10 @@
-import mysql.connector
+# import mysql.connector
 import datetime
 from src.utils.Force import force_int, force_str
 from src.utils.CrudGeneric import generic_cadastrar, generic_consultar, generic_alterar
-from src.utils.Colors import NEGRITO, CIANO, AMARELO, VERDE, VERMELHO, RESET
+from src.utils.Colors import NEGRITO, CIANO, AMARELO, VERDE, VERMELHO, RESET, CINZENTO
+from src.services.vendas import realizar_venda_os
+from src.utils.Force import listar_ids  
 
 
 def adicionar_peca(conexao, cursor, id_os=None) -> bool:
@@ -12,6 +14,10 @@ def adicionar_peca(conexao, cursor, id_os=None) -> bool:
     try:
         if id_os is None:
             id_os = force_int("ID da OS: ")
+
+        print(f"\n{NEGRITO}=== PEÇAS DISPONÍVEIS EM ESTOQUE ==={RESET}")
+        listar_ids("pecas")
+        print()
             
         id_peca = force_int("ID da peça: ")
         quantidade = force_int("Quantidade: ")
@@ -20,11 +26,12 @@ def adicionar_peca(conexao, cursor, id_os=None) -> bool:
         peca = generic_consultar(cursor, 'pecas', 'id', id_peca)
 
         if not peca or peca[6] == 0:  # Índice 6 é o 'ativo' da tabela pecas
-            print("❌ Peça não encontrada.")
+            print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Peça não encontrada.")
+
             return False
             
         if peca[5] < quantidade:  # Índice 5 é a 'quantidade' em estoque
-            print(f"❌ Estoque insuficiente. Quantidade disponível: {peca[5]}")
+            print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Estoque insuficiente. Quantidade disponível: {peca[5]}")
             return False
 
         preco_venda = peca[4]  # Índice 4 é o 'preco_venda'
@@ -37,6 +44,7 @@ def adicionar_peca(conexao, cursor, id_os=None) -> bool:
             'quantidade': quantidade,
             'subtotal': subtotal
         }
+
         generic_cadastrar(conexao, cursor, 'os_itens', dados_item)
 
         # Atualiza o cabeçalho da OS somando o valor total de forma genérica
@@ -50,12 +58,12 @@ def adicionar_peca(conexao, cursor, id_os=None) -> bool:
         generic_alterar(conexao, cursor, 'pecas', {'quantidade': nova_qtd_estoque}, id_peca)
 
         conexao.commit()
-        print(f"✅ Peça adicionada! Subtotal: R$ {subtotal:.2f}")
+        print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Peça adicionada! Subtotal: R$ {subtotal:.2f}")
         return True
 
     except Exception as erro:
         conexao.rollback()
-        print(f"❌ ERRO ao adicionar peça: {erro}")
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao adicionar peça. Detalhes: {erro}")
         return False
 
 
@@ -73,7 +81,7 @@ def adicionar_servico(conexao, cursor, id_os=None) -> bool:
         servico = generic_consultar(cursor, 'servicos', 'id', id_servico)
 
         if not servico or servico[4] == 0:  # Índice 4 é o 'ativo' de serviços
-            print("❌ Serviço não encontrado.")
+            print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Serviço não encontrado.")
             return False
 
         subtotal = servico[2]  # Índice 2 é a 'mao_de_obra'
@@ -85,6 +93,7 @@ def adicionar_servico(conexao, cursor, id_os=None) -> bool:
             'quantidade': 1,
             'subtotal': subtotal
         }
+
         generic_cadastrar(conexao, cursor, 'os_itens', dados_item)
 
         # Atualiza o valor total da Ordem de Serviço
@@ -94,12 +103,12 @@ def adicionar_servico(conexao, cursor, id_os=None) -> bool:
             generic_alterar(conexao, cursor, 'ordens_servico', {'valor_total': novo_total}, id_os)
 
         conexao.commit()
-        print(f"✅ Serviço adicionado! Valor: R$ {subtotal:.2f}")
+        print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Serviço adicionada! Valor: R$ {subtotal:.2f}")
         return True
 
     except Exception as erro:
         conexao.rollback()
-        print(f"❌ ERRO ao adicionar serviço: {erro}")
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao adicionar serviço. Detalhes: {erro}")
         return False
 
 
@@ -113,23 +122,35 @@ def fechar_os(conexao, cursor, id_os=None) -> bool:
 
         os_atual = generic_consultar(cursor, 'ordens_servico', 'id', id_os)
         if not os_atual or os_atual[4] != 'ABERTA':  # Índice 4 é o 'status'
-            print("⚠️ Não foi possível fechar a OS (pode não existir ou não estar ABERTA).")
+            print(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Não foi possível fechar a OS (pode não existir ou não estar ABERTA).")
             return False
+        
+        confirmar = input(f"{AMARELO}Confirmar fechamento e faturamento da OS {id_os}? (s/n): {RESET}").strip().lower()
 
-        dados_fechamento = {
-            'status': 'FECHADA',
-            'data_fechamento': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
+        if confirmar == "s":
+            dados_fechamento = {
+                'status': 'FECHADA',
+                'data_fechamento': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
 
-        # Atualiza os dados usando a função genérica
-        generic_alterar(conexao, cursor, 'ordens_servico', dados_fechamento, id_os)
-        conexao.commit()
-        print("✅ Ordem de Serviço Finalizada e Faturada com sucesso!")
-        return True
+            # Atualiza os dados usando a função genérica
+            generic_alterar(conexao, cursor, 'ordens_servico', dados_fechamento, id_os)
+            
+            # Registra os itens da OS como vendas consolidadas no banco de dados
+            realizar_venda_os(conexao, cursor, id_os)
+
+            conexao.commit()
+            print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Ordem de Serviço Finalizada e Faturada com sucesso!")
+
+            # Registra os itens da OS como vendas consolidadas no banco de dados
+            return True
+        else:
+            print(f"\n{VERMELHO}Fechamento cancelado.{RESET} A OS continua aberta.")
+            return False
 
     except Exception as erro:
         conexao.rollback()
-        print(f"❌ ERRO ao fechar OS: {erro}")
+        print(f"{VERMELHO}ERRO ao fechar OS:{RESET} {erro}")
         return False
 
 
@@ -143,17 +164,17 @@ def cancelar_os(conexao, cursor, id_os=None) -> bool:
 
         os_atual = generic_consultar(cursor, 'ordens_servico', 'id', id_os)
         if not os_atual or os_atual[4] != 'ABERTA':
-            print("⚠️ Não foi possível cancelar a OS (pode não existir ou já estar encerrada).")
+            print(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Não foi possível cancelar a OS (pode não existir ou já estar encerrada).")
             return False
 
         generic_alterar(conexao, cursor, 'ordens_servico', {'status': 'CANCELADA'}, id_os)
         conexao.commit()
-        print("✅ OS cancelada com sucesso!")
+        print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} OS cancelada com sucesso!")
         return True
 
     except Exception as erro:
         conexao.rollback()
-        print(f"❌ ERRO ao cancelar OS: {erro}")
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao cancelar OS. Detalhes: {erro}")
         return False
 
 def listar_os_abertas(conexao, cursor):
@@ -179,21 +200,18 @@ def listar_os_abertas(conexao, cursor):
         lista = cursor.fetchall()
 
         if not lista:
-            print("⚠️ Nenhuma OS aberta.")
+            print(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Nenhuma OS aberta.")
             return
 
         print("\n===== OS ABERTAS =====")
-
         for ordem in lista:
-            print(
-                f"[{ordem[0]}] Cliente: {ordem[1]} | "
-                f"Placa: {ordem[2]} | "
-                f"Data: {ordem[3]} | "
-                f"Valor: R$ {ordem[4]}"
-            )
+            valor_os = ordem[4] if ordem[4] is not None else 0.0
+            valor_formatado = f"R$ {valor_os:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            data_os = ordem[3].strftime('%d/%m/%Y') if hasattr(ordem[3], 'strftime') else (ordem[3] if ordem[3] else 'Não informada')
+            print(f" {NEGRITO}[{ordem[0]}]{RESET} Cliente: '{ordem[1] if ordem[1] else 'Avulso'}' {CINZENTO}|{RESET} Placa: '{ordem[2] if ordem[2] else 'N/A'}' {CINZENTO}|{RESET} Data: '{data_os}' {CINZENTO}|{RESET} Valor: {valor_formatado}")
 
     except Exception as erro:
-        print(f"❌ ERRO: {erro}")
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} {erro}")
 
 def listar_todas_os(conexao, cursor):
     try:
@@ -214,7 +232,7 @@ def listar_todas_os(conexao, cursor):
         lista = cursor.fetchall()
 
         if not lista:
-            print("\n ❌ Nenhuma OS cadastrada no sistema.")
+            print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Nenhuma OS cadastrada no sistema.")
             return
 
         print("\n==================== HISTÓRICO COMPLETO DE OS ====================")
@@ -223,16 +241,17 @@ def listar_todas_os(conexao, cursor):
             data_f = ordem[3].strftime('%d/%m/%Y %H:%M') if hasattr(ordem[3], 'strftime') else ordem[3]
             
             print(
-                f"[{ordem[0]}] Cliente: {ordem[1]:<15} | "
-                f"Placa: {ordem[2]} | "
-                f"Status: {ordem[4]:<9} | "
-                f"Data: {data_f} | "
+                f" {NEGRITO}[{ordem[0]}]{RESET} "
+                f"Cliente: '{ordem[1]:<15}' {CINZENTO}|{RESET} "
+                f"Placa: '{ordem[2]}' {CINZENTO}|{RESET} "
+                f"Status: '{ordem[4]:<9}' {CINZENTO}|{RESET} "
+                f"Data: '{data_f}' {CINZENTO}|{RESET} "
                 f"Valor: R$ {ordem[5]:.2f}"
             )
         print("==================================================================")
 
     except Exception as erro:
-        print(f"❌ ERRO ao listar histórico: {erro}")
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao listar histórico. Detalhes: {erro}")
 
 
 

@@ -1,6 +1,6 @@
 import mysql.connector
-from src.utils.Colors import NEGRITO, VERMELHO, AMARELO, CIANO, RESET
-
+from src.utils.Colors import NEGRITO, VERMELHO, AMARELO, CIANO, RESET, VERDE
+  
 def generic_cadastrar(conexao, cursor, tabela: str, dados: dict) -> bool:
     """
     Insere um registro de forma genérica em qualquer tabela.
@@ -93,3 +93,59 @@ def generic_listar(cursor, tabela: str, apenas_ativos: bool = True) -> tuple:
     except mysql.connector.Error as erro:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha ao listar a tabela '{tabela}'. Detalhes: {erro}")
         return []
+    
+def generic_desativar_em_lote(conexao, cursor, tabela: str, *ids_registros) -> bool:
+    """
+    Aplica o Soft Delete (ativo = 0) em lote para múltiplos IDs passados via *args.
+    """
+    if not ids_registros:
+        print(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Nenhum ID foi informado para desativação.")
+        return False
+
+    try:
+        # Cria os placeholders %s baseados na quantidade de IDs informados no *args
+        placeholders = ', '.join(['%s'] * len(ids_registros))
+        
+        # Monta a query usando a cláusula IN (Ex: WHERE id IN (%s, %s, %s))
+        query = f"UPDATE {tabela} SET ativo = 0 WHERE id IN ({placeholders})"
+        
+        # O cursor do MySQL aceita a tupla ids_registros diretamente
+        cursor.execute(query, ids_registros)
+        conexao.commit()
+        
+        print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} {cursor.rowcount} registro(s) desativado(s) em lote na tabela '{tabela}'!")
+        return True
+        
+    except mysql.connector.Error as erro:
+        conexao.rollback()
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha ao desativar em lote na tabela '{tabela}'. Detalhes: {erro}")
+        return False
+
+
+
+def generic_filtrar(
+    cursor,
+    tabela: str,
+    colunas: str = "*",
+    where: str | None = None,
+    params: tuple = (),
+    order_by: str | None = None
+) -> list:
+    """Executa buscas genéricas no MySQL retornando uma lista de dicionários."""
+    
+    # Construção da query (as crases protegem nomes de tabelas/colunas no MySQL)
+    # Nota: Se passar JOINs, não use crases na string inteira da tabela.
+    query = f"SELECT {colunas} FROM {tabela}"
+
+    if where:
+        query += f" WHERE {where}"
+
+    if order_by:
+        query += f" ORDER BY {order_by}"
+
+    try:
+        cursor.execute(query, params)
+        return cursor.fetchall()  # Retorna lista de dicionários se o cursor estiver configurado
+    except Exception as e:
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao buscar dados. Detalhes: {e}")
+        return []        

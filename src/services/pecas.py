@@ -38,8 +38,8 @@ def repor_estoque(cursor, conexao, id_peca, qtd):
 
 
 
-def alterar_preco(cursor, conexao, id_peca, novo_preco):
-
+def alterar_peca(cursor, conexao, id_peca, dados_novos):
+    # 1. Verifica se a peça existe e está ativa
     cursor.execute(
         "SELECT 1 FROM pecas WHERE id = %s AND ativo = 1",
         (id_peca,)
@@ -49,14 +49,22 @@ def alterar_preco(cursor, conexao, id_peca, novo_preco):
         print(f"\n{NEGRITO}{AMARELO}[AVISO]{RESET} Peça não encontrada no sistema.")
         return
 
-    cursor.execute("""
-        UPDATE pecas
-        SET preco_venda = %s
-        WHERE id = %s AND ativo = 1
-    """, (novo_preco, id_peca))
+    # 2. Monta a Query SQL dinamicamente baseado nos campos preenchidos
+    campos = ", ".join([f"{coluna} = %s" for coluna in dados_novos.keys()])
+    valores = list(dados_novos.values())
+    valores.append(id_peca)  # O ID vai por último para o WHERE
 
+    query = f"""
+        UPDATE pecas
+        SET {campos}
+        WHERE id = %s AND ativo = 1
+    """
+
+    cursor.execute(query, tuple(valores))
     conexao.commit()
-    print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Preço atualizado com sucesso!")
+    
+    #from src.utils.Colors import VERDE
+    #print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Dados da peça atualizados com sucesso!")
 
 
 def consultar_peca(cursor, id_peca):

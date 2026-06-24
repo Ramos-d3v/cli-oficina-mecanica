@@ -3,6 +3,8 @@ from src.utils.protecao import obter_ano, obter_cpf, obter_placa
 from src.services.entrada_rapida import buscar_veiculo_completo, criar_nova_os
 from src.utils.CrudGeneric import generic_cadastrar,  generic_consultar
 from src.ui.menus_servicos_os.Menu_Servicos_os import menu_servicos_os 
+from src.utils.Colors import NEGRITO, AMARELO, RESET, CIANO, CINZENTO, VERDE, VERMELHO
+
 
 def fluxo_entrada_rapida(conexao, cursor):
     print("\n" + "="*20 + " ENTRADA RÁPIDA / NOVA OS " + "="*20)
@@ -20,46 +22,46 @@ def fluxo_entrada_rapida(conexao, cursor):
         print(f"\n🚗 Veículo Localizado: {veiculo[3]} {veiculo[4]} ({veiculo[5]})")
         print(f"👤 Cliente/Dono: {cliente[1]} - CPF: {cliente[3]}")
         
-        confirmar = force_str("Confirmar abertura de OS para este veículo? (S/N): ").upper()
+        confirmar = force_str(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Confirmar abertura de OS para este veículo? {CIANO}(S/N){RESET}: ").upper()
         if confirmar != 'S':
-            print("Operação cancelada.")
+            print(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Operação cancelada.")
             return
         id_veiculo_final = veiculo[0] # Pega o ID do veículo existente
         
     else:
         # Cenário B: Carro não existe (Cadastrar novo)
-        marca = force_str("Digite a marca do veículo: ")
-        modelo = force_str("Digite o modelo do veículo: ")
-        ano = obter_ano("Digite o ano do veículo: ")
-        quilometragem = force_int("Digite a quilometragem do veículo: ")
+        marca = force_str(f"\n{NEGRITO}Digite a marca do veículo: {RESET}")
+        modelo = force_str(f"{NEGRITO}Digite o modelo do veículo: {RESET}")
+        ano = obter_ano(f"{NEGRITO}Digite o ano do veículo: {RESET}")
+        quilometragem = force_int(f"{NEGRITO}Digite a quilometragem do veículo: {RESET}")
         
         cliente_id_final = None
         while True:
-            print("\nEste veículo pertence a um cliente cadastrado ou novo?")
-            print("[1]. Vincular a um Cliente Existente (Buscar por CPF)")
-            print("[2]. Cadastrar um Novo Cliente agora")
+            print(f"\n{NEGRITO}Este veículo pertence a um cliente cadastrado ou novo?{RESET}")
+            print(f" {CINZENTO}[1].{RESET} Vincular a um Cliente Existente (Buscar por CPF)")
+            print(f" {CINZENTO}[2].{RESET} Cadastrar um Novo Cliente agora")
             opcao_cliente = force_int("Escolha uma opção: ")
             
             if opcao_cliente == 1:
-                cpf_busca = obter_cpf("Digite o CPF do cliente dono (apenas números): ")
+                cpf_busca = obter_cpf(f"\n{NEGRITO}Digite o CPF do cliente dono {RESET}{CIANO}(apenas números){RESET}{NEGRITO}: {RESET}")
                 cli_existente = generic_consultar(cursor, 'clientes', 'cpf', cpf_busca)
                 if cli_existente:
                     cliente_id_final = cli_existente[0] 
-                    print(f"✅ Cliente localizado: {cli_existente[1]}")
+                    print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Cliente localizado: '{cli_existente}'")
                     break
                 else:
-                    cliente_escolha = force_str("Cliente não localizado com esse cpf quer cadastrar ele ? (S/N): ").upper()
+                    cliente_escolha = force_str(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Cliente não localizado com esse CPF. Quer cadastrar ele? {CIANO}(S/N){RESET}: ").upper()
                     if cliente_escolha != 'S':
-                        print("Operação cancelada.")
+                        print(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Operação cancelada.")
                         continue
                     elif cliente_escolha == 'S':
                         opcao_cliente = 2
                         
             if opcao_cliente == 2:
-                print("\n--- CADASTRO DO DONO DO VEÍCULO ---")
-                nome_cli = force_str("Nome completo do Cliente: ")
-                tel_cli = force_str("Telefone: ")
-                cpf_cli = obter_cpf("CPF (11 dígitos, apenas números): ")
+                print(f"\n --- CADASTRO DO DONO DO VEÍCULO ---")
+                nome_cli = force_str(f"{NEGRITO}Nome completo do Cliente: {RESET}")
+                tel_cli = force_str(f"{NEGRITO}Telefone: {RESET}")
+                cpf_cli = obter_cpf(f"{NEGRITO}CPF {RESET}{CIANO}(11 dígitos, apenas números){RESET}{NEGRITO}: {RESET}")
                 
                 dados_cli = {
                     'nome': nome_cli,
@@ -73,10 +75,10 @@ def fluxo_entrada_rapida(conexao, cursor):
                 if cliente_buscado:
                     cliente_id_final = cliente_buscado[0]
                 
-                print("✅ Cliente cadastrado com sucesso!")
+                print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Cliente cadastrado com sucesso!")
                 break
                  
-        # IMPORTANTE: Este bloco de cadastro de veículo agora fica DENTRO do ELSE!
+        
         data = {
                 'cliente_id': cliente_id_final,
                 'placa': placa,
@@ -88,7 +90,7 @@ def fluxo_entrada_rapida(conexao, cursor):
                
         resposta = generic_cadastrar(conexao, cursor, 'veiculos', data)
         if resposta:
-            print("✅ Veículo cadastrado com sucesso!")
+            print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Veículo cadastrado com sucesso!")
             veiculo_salvo = generic_consultar(cursor, 'veiculos', 'placa', placa)
             if veiculo_salvo:
                 id_veiculo_final = veiculo_salvo[0]
@@ -97,10 +99,10 @@ def fluxo_entrada_rapida(conexao, cursor):
     if id_veiculo_final:
         id_nova_os = criar_nova_os(conexao, cursor, id_veiculo_final)
         if id_nova_os:
-            print(f"\n🚀 SUCESSO: Ordem de Serviço Nº {id_nova_os} Aberta!")
-            print("Redirecionando você para a tela de Adicionar Peças e Serviços...")
+            print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Ordem de Serviço Nº '{id_nova_os}' Aberta!")
+            print(f"{NEGRITO}Redirecionando você para a tela de Adicionar Peças e Serviços...{RESET}")
             
             # Encaminha o usuário direto para a tela de "vendas" de itens da OS criada
             menu_servicos_os(conexao, cursor, id_nova_os) 
         else:
-            print("Erro ao gerar a Ordem de Serviço no banco.")
+            print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao gerar a Ordem de Serviço no banco.")

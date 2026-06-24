@@ -110,6 +110,74 @@ def start_bd(conexao, cursor):
             )
         """)
 
+        # [7] TABELA DE PROMOÇÕES (Movida para antes de Vendas para evitar erro de Foreign Key)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS promocoes (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                nome VARCHAR(255) NOT NULL,
+                percentual_desconto DECIMAL(5, 2) NOT NULL,
+                peca_id INT,
+                servico_id INT,
+                ativo INT DEFAULT 1,
+                FOREIGN KEY (peca_id) REFERENCES pecas(id),
+                FOREIGN KEY (servico_id) REFERENCES servicos(id)
+            )
+        """)
+
+        # [8] TABELA DE VENDAS 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS vendas (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                data_venda DATETIME NOT NULL,
+                cliente_id INT,
+                veiculo_id INT,
+                ordem_id INT,
+                peca_id INT,
+                servico_id INT,
+                promocao_id INT,
+                quantidade INT NOT NULL DEFAULT 1,
+                preco_unitario DECIMAL(10,2) NOT NULL,
+                valor_total DECIMAL(10,2) NOT NULL,
+                FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+                FOREIGN KEY (veiculo_id) REFERENCES veiculos(id),
+                FOREIGN KEY (ordem_id) REFERENCES ordens_servico(id),
+                FOREIGN KEY (peca_id) REFERENCES pecas(id),
+                FOREIGN KEY (promocao_id) REFERENCES promocoes(id)
+            )
+        """)
+
+        cursor.execute("ALTER TABLE vendas MODIFY cliente_id INT NULL")
+
+        #Tabela de vendas de itens/peças unitárias(Não precisa vincular a um cliente_id)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS vendas_itens (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                data_venda_item DATETIME NOT NULL,
+                venda_id INT NOT NULL,
+                peca_id INT NOT NULL,
+                quantidade INT DEFAULT 1,
+                subtotal DECIMAL(10,2) NOT NULL,
+                FOREIGN KEY (venda_id) REFERENCES vendas(id),
+                FOREIGN KEY (servico_id) REFERENCES servicos(id),
+                FOREIGN KEY (peca_id) REFERENCES pecas(id)
+            )
+        """)
+        cursor.execute("SELECT COUNT(*) FROM vendas_itens")
+        if cursor.fetchone()[0] == 0:
+            
+            #(venda_id, peca_id, quantidade, subtotal)
+            # ID 1 e 2 já existem na tabela vendas, só vai puxar dados que já existem em outra tabela
+            itens_venda_iniciais = [
+                (1, 1, 3, 105.00), 
+                (1, 2, 1, 28.00),  
+                (2, 1, 1, 35.00)   
+            ]
+            
+            cursor.executemany("""
+                INSERT INTO vendas_itens (venda_id, peca_id, quantidade, subtotal)
+                VALUES (%s, %s, %s, %s)
+            """, itens_venda_iniciais)
+        
         # ==========================================
         # INSERÇÃO DE DADOS INICIAIS (SEEDERS)
         # ==========================================
@@ -172,7 +240,7 @@ def start_bd(conexao, cursor):
                 INSERT INTO veiculos (cliente_id, placa, marca, modelo, ano, quilometragem)
                 VALUES (%s, %s, %s, %s, %s, %s)                  
             """, veiculos_iniciais)
-
+        
         conexao.commit()
         print(f"\n{NEGRITO}Banco de dados e dados iniciais configurados com sucesso!{RESET}")
 
@@ -180,4 +248,4 @@ def start_bd(conexao, cursor):
         conexao.rollback()
         print(f"\n{NEGRITO}{VERMELHO_B}CRÍTICO:{RESET} Falha de sistema. Erro crítico no arquivo 'banco_dados'.")
         print(f"{NEGRITO}{VERMELHO_B}AÇÃO:{RESET} Conexão cancelada e alterações revertidas (rollback).")
-        print(f"{NEGRITO}Detalhes técnicos:{RESET} {erro}\n")
+        print(f"{NEGRITO}Detalhes técnicos:{RESET} {erro}\n"), 2

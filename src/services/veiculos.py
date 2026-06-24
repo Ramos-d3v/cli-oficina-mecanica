@@ -18,11 +18,13 @@ def buscar_veiculo_por_placa(cursor, placa_busca):
 
     if veiculo:
         print(f"\n{NEGRITO}{CIANO}================ DADOS DO VEÍCULO ================{RESET}")
-        print(f"{NEGRITO}ID do Registro:{RESET}  {veiculo[0]}")
-        print(f"{NEGRITO}ID do Cliente:{RESET}   {veiculo[1]}")
-        print(f"{NEGRITO}Placa:{RESET}           {veiculo[2]}")
-        print(f"{NEGRITO}Marca/Modelo:{RESET}    {veiculo[3]} {veiculo[4]}")
-        print(f"{NEGRITO}Ano Fabricação:{RESET}  {veiculo[5]}")
+        print(f"{NEGRITO}{'ID do Registro:':<16}{RESET} {veiculo[0]}")
+        print(f"{NEGRITO}{'ID do Cliente:':<16}{RESET} {veiculo[1]}")
+        print(f"{NEGRITO}{'Placa:':<16}{RESET} {veiculo[2] if veiculo[2] else 'Não informada'}")
+        marca = veiculo[3] if veiculo[3] else "Sem Marca"
+        modelo = veiculo[4] if veiculo[4] else "Sem Modelo"
+        print(f"{NEGRITO}{'Marca/Modelo:':<16}{RESET} {marca} / {modelo}")
+        print(f"{NEGRITO}{'Ano Fabricação:':<16}{RESET} {veiculo[5] if veiculo[5] else 'Não informado'}")
         
         # Formatação de quilometragem com pontos
         km_formatado = f"{veiculo[6]:,}".replace(",", ".")

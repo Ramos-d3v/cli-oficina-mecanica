@@ -1,26 +1,21 @@
 from src.services.Relatorios import rel_fat_periodo, rel_pecas, rel_servicos, exp_txt
 from src.utils.Force import force_int
-from src.utils.Connection import limpar
-from src.utils.Colors import NEGRITO, VERMELHO, RESET
+from src.utils.Colors import NEGRITO, VERMELHO, RESET, CIANO
 
 def menu_gerencial(conexao, cursor):
     while True:
-        limpar()
-        print("""
-        ┌─────────────────────────────────────────────────┐
-        │             PAINEL GERENCIAL & RELATÓRIOS       │
-        ├─────────────────────────────────────────────────┤
-        │ [1]. Faturamento Total por Período              │
-        │ [2]. Peças Mais Vendidas (Top 5)                │
-        │ [3]. Serviços Mais Procurados                   │
-        │ [4]. Exportar Resumo do Dia (.TXT)              │
-        ├─────────────────────────────────────────────────┤
-        │ [0]. Voltar                                     │
-        └─────────────────────────────────────────────────┘
-        """)
+        print(f"\n{NEGRITO}{CIANO}┌─────────────────────────────────────────────────┐{RESET}")
+        print(f"{NEGRITO}{CIANO}│          📊   PAINEL GERENCIAL & RELATÓRIOS     │{RESET}")
+        print(f"{NEGRITO}{CIANO}├─────────────────────────────────────────────────┤{RESET}")
+        print(f"{NEGRITO}{CIANO}│{RESET}  [1]. Faturamento Total por Período             {NEGRITO}{CIANO}│{RESET}")
+        print(f"{NEGRITO}{CIANO}│{RESET}  [2]. Peças Mais Vendidas (Top 5)               {NEGRITO}{CIANO}│{RESET}")
+        print(f"{NEGRITO}{CIANO}│{RESET}  [3]. Serviços Mais Procurados                  {NEGRITO}{CIANO}│{RESET}")
+        print(f"{NEGRITO}{CIANO}│{RESET}  [4]. Exportar Resumo do Dia (.TXT)             {NEGRITO}{CIANO}│{RESET}")
+        print(f"{NEGRITO}{CIANO}├─────────────────────────────────────────────────┤{RESET}")
+        print(f"{NEGRITO}{CIANO}│{RESET}  [0]. Voltar                                    {NEGRITO}{CIANO}│{RESET}")
+        print(f"{NEGRITO}{CIANO}└─────────────────────────────────────────────────┘{RESET}")
         
         opcao = force_int("Escolha uma opção: ")
-        limpar()
         
         if opcao == 1:
             rel_fat_periodo(conexao, cursor)

@@ -1,6 +1,7 @@
 from src.utils.Force import force_float, force_int, force_str
-
-from src.utils.CrudGeneric import generic_alterar,generic_cadastrar,generic_consultar,generic_desativar,generic_listar
+from src.utils.Colors import NEGRITO, AMARELO, RESET, VERMELHO, CINZENTO, VERDE, CIANO
+from src.utils.Force import listar_ids
+from src.utils.CrudGeneric import generic_alterar,generic_cadastrar,generic_consultar,generic_desativar,generic_listar, generic_desativar_em_lote
 
 def cadastrar_cliente(conexao, cursor , nome, telefone, cpf) -> None:
     """
@@ -13,9 +14,9 @@ def cadastrar_cliente(conexao, cursor , nome, telefone, cpf) -> None:
         }
     cadastrado = generic_cadastrar(conexao, cursor, 'clientes', dados_cadastro)
     if cadastrado:
-        print("Cliente cadastrado com sucesso!")
+        print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Cliente cadastrado com sucesso!")
     else:
-        print("Erro ao cadastrar cliente.")
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao cadastrar cliente.")
 
     
 def consultar_cliente(conexao,  cursor, termo_busca: str | int) -> None:
@@ -28,10 +29,9 @@ def consultar_cliente(conexao,  cursor, termo_busca: str | int) -> None:
         resposta = generic_consultar(cursor,'clientes','id',termo_busca)
     
     if resposta:
-        # resposta já é a tupla com os dados do cliente (id, nome, telefone, cpf, ativo)
-        print(f"\nID: {resposta[0]} | Nome: {resposta[1]} | Telefone: {resposta[2]} | CPF: {resposta[3]}")
+        print(f"\n {NEGRITO}ID: {resposta[0]}{RESET} {CINZENTO}|{RESET} Nome: '{resposta[1]}' {CINZENTO}|{RESET} Telefone: '{resposta[2]}' {CINZENTO}|{RESET} CPF: '{resposta[3]}'")
     else:
-        print("\n❌ Cliente não encontrado!")
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Cliente não encontrado!")
 
 def listar_clientes(conexao, cursor,apenas_ativos: bool = True) -> None:  
     """
@@ -39,7 +39,7 @@ def listar_clientes(conexao, cursor,apenas_ativos: bool = True) -> None:
     """
     reposta = generic_listar(cursor,'clientes',apenas_ativos)
     for item in reposta:
-        print(f"ID: {item[0]} | Nome: {item[1]} | Telefone: {item[2]} | CPF: {item[3]}")
+        print(f"\n {NEGRITO}ID: {item[0]}{RESET} {CINZENTO}|{RESET} Nome: '{item[1]}' {CINZENTO}|{RESET} Telefone: '{item[2]}' {CINZENTO}|{RESET} CPF: '{item[3]}'")
 
             
             
@@ -54,20 +54,31 @@ def alterar_cliente(conexao, cursor, id_cliente: int, novo_nome: str, novo_telef
     }
     resposta = generic_alterar(conexao, cursor, 'clientes', new_data, id_cliente)
     if resposta:
-        print("Sucesso: Cliente alterado com sucesso!")
+        print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Cliente alterado com sucesso!")
     else:
-        print("Erro ao alterar o cliente.")
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao alterar o cliente.")
 
          
             
-def desativar_cliente(conexao, cursor, id_cliente: int) -> None:
-    """
-    Desativa um cliente  baseado no seu ID, após verificar se o ID existe.
-    """
+def fluxo_desativar_clientes_em_lote(conexao, cursor):
+    print(f"\n{NEGRITO}=== EXCLUSÃO DE CLIENTES EM LOTE (SOFT DELETE) ==={RESET}")
     
-    resposta = generic_desativar(conexao, cursor, 'clientes', id_cliente)
-    if resposta:
-        print("Sucesso: Cliente desativado com sucesso!")
-    else:
-        print("Erro ao desativar o cliente.")
+    # Exibe os IDs ativos atuais para facilitar a escolha do usuário
+    listar_ids("clientes")
+    
+    entrada = force_str(f"\n{NEGRITO}Digite os IDs dos clientes que deseja desativar {RESET}{CIANO}(separados por vírgula. Ex: 1, 2, 3){RESET}{NEGRITO}: {RESET}")
+    
+    try:
+        # Converte a string "1, 2, 3" em uma lista de inteiros [1, 2, 3] de forma segura
+        lista_ids = [int(x.strip()) for x in entrada.split(",") if x.strip().isdigit()]
+        
+        if lista_ids:
+            # O ASTERISCO (*) desempacota a lista transformando os itens em parâmetros posicionais (*args)
+            generic_desativar_em_lote(conexao, cursor, "clientes", *lista_ids)
+        else:
+            print(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Nenhum ID válido foi digitado.")
+            
+    except Exception as e:
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao processar os dados de entrada. Detalhes: {e}")
+
 
