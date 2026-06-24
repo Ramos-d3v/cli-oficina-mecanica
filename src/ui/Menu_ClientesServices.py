@@ -2,6 +2,8 @@ from src.utils.Force import force_int, force_id,force_float,force_str
 from src.utils.Force import listar_ids
 from src.utils.protecao import obter_cpf
 from src.services.ClientesServices import alterar_cliente,cadastrar_cliente,consultar_cliente,desativar_cliente,listar_clientes
+from src.utils.Colors import NEGRITO, AMARELO, RESET, ITALICO
+
 
 def menu_cli(conexao, cursor):
     print("""
@@ -67,4 +69,4 @@ def menu_cli(conexao, cursor):
                 elif opcao == 'n':
                     listar_clientes(conexao, cursor, apenas_ativos=False)
                 else:
-                    print("Opção invalida coloque apenas o 's' ou 'n' !!!")
+                    print(f"{NEGRITO}{AMARELO}Opção invalida coloque apenas o{RESET} {ITALICO}'s'{RESET} {NEGRITO}{AMARELO}ou{RESET} {ITALICO}'n'{RESET} {NEGRITO}{AMARELO}!!!{RESET}")

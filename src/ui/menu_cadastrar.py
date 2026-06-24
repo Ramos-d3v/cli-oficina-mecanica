@@ -2,7 +2,7 @@ from src.utils.Force import force_int, force_str, force_id, listar_ids
 from src.services.ClientesServices import cadastrar_cliente, alterar_cliente, consultar_cliente, desativar_cliente
 from src.utils.protecao import obter_cpf, obter_placa
 from src.services.veiculos import cadastrar_veiculo, alterar_veiculo, desativar_veiculo
-
+from src.utils.Colors import NEGRITO, AMARELO, RESET, VERMELHO
 
 
 
@@ -149,8 +149,8 @@ def cadastro_geral(conexao, cursor, dados):
             case 6:
 
                 print("""
-                1 - Desativar Cliente
-                2 - Desativar Veículo
+                [1] - Desativar Cliente
+                [2] - Desativar Veículo
                 """)
 
                 escolha = force_int("Escolha: ")
@@ -166,7 +166,8 @@ def cadastro_geral(conexao, cursor, dados):
                     if confirmacao == "s":
                         desativar_cliente(conexao,cursor,id_cliente)
                     else:
-                        print("Operação cancelada.")
+                        print(f"{NEGRITO}{VERMELHO}Operação cancelada.{RESET}")
+
 
                 elif escolha == 2:
 
@@ -179,13 +180,14 @@ def cadastro_geral(conexao, cursor, dados):
                     if confirmacao == "s":
                         desativar_veiculo(cursor,conexao,id_veiculo)
                     else:
-                        print("Operação cancelada.")
+                        print(f"{NEGRITO}{VERMELHO}Operação cancelada.{RESET}")
+
 
                 else:
-                    print("Opção inválida.")    
+                    print(f"{NEGRITO}{AMARELO}Opção inválida.{RESET}")
 
             case _:
-                print("Opção inválida.")                    
+                print(f"{NEGRITO}{AMARELO}Opção inválida.{RESET}")                   
 
 
 

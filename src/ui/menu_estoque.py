@@ -2,6 +2,7 @@ from src.utils.Force import force_int, force_id,force_float,force_str
 from src.services.pecas import cadastrar_peca, repor_estoque, alterar_preco, consultar_peca, desativar_peca, listar_estoque    
 from src.utils.Force import listar_ids
 from src.services.servicos import cadastrar_servico, alterar_servico ,desativar_servico
+from src.utils.Colors import NEGRITO, AMARELO, RESET
 
 def controle_estoque (conexao, cursor):
     
@@ -48,59 +49,33 @@ def controle_estoque (conexao, cursor):
             case 2:
                 listar_ids("pecas")
 
-                id_peca = force_id(
-                    "pecas",
-                    "ID da peça (0 para voltar): "
-                )
+                id_peca = force_id( "pecas", "ID da peça (0 para voltar): ")
 
                 if id_peca is None:
                     continue
 
-                qtd = force_int(
-                    "Quantidade a adicionar: "
-                )
+                qtd = force_int( "Quantidade a adicionar: ")
 
-                repor_estoque(
-                    cursor,
-                    conexao,
-                    id_peca,
-                    qtd
-                )
+                repor_estoque(cursor, conexao, id_peca, qtd)
 
             case 3:
                 listar_ids("pecas")
 
-                id_peca = force_id(
-                    "pecas",
-                    "ID da peça: "
-                )
+                id_peca = force_id("pecas", "ID da peça: ")
 
                 if id_peca is None:
                     continue
 
-                novo_preco = force_float(
-                    "Novo preço de venda: "
-                )
+                novo_preco = force_float("Novo preço de venda: ")
 
-                alterar_preco(
-                    cursor,
-                    conexao,
-                    id_peca,
-                    novo_preco
-                )
+                alterar_preco(cursor, conexao, id_peca, novo_preco )
 
             case 4:
-                descricao = force_str(
-                    "Descrição do serviço: "
-                )
+                descricao = force_str( "Descrição do serviço: ")
 
-                mao_de_obra = force_float(
-                    "Valor da mão de obra: "
-                )
+                mao_de_obra = force_float( "Valor da mão de obra: ")
 
-                tempo = force_str(
-                    "Tempo estimado: "
-                )
+                tempo = force_str("Tempo estimado: ")
 
                 dados = {
                     "descricao": descricao,
@@ -108,27 +83,17 @@ def controle_estoque (conexao, cursor):
                     "tempo_estimado": tempo
                 }
 
-                cadastrar_servico(
-                    cursor,
-                    conexao,
-                    dados
-                )
+                cadastrar_servico( cursor, conexao, dados)
 
             case 5:
                 listar_ids("servicos")
 
-                id_servico = force_id(
-                    "servicos",
-                    "ID do serviço: "
-                )
+                id_servico = force_id("servicos", "ID do serviço: ")
 
                 if id_servico is None:
                     continue
-                
 
-                novo_valor = force_float(
-                    "Novo valor da mão de obra: "
-                )
+                novo_valor = force_float("Novo valor da mão de obra: ")
 
                 # 1. Cria o dicionário com a coluna exata do banco e o novo valor
                 dados_atualizacao = {
@@ -145,48 +110,28 @@ def controle_estoque (conexao, cursor):
 
             case 6:
                 print("""
-                1 - Desativar peça
-                2 - Desativar serviço
+                [1] - Desativar peça
+                [2] - Desativar serviço
                 """)
 
                 tipo = force_int("Escolha: ")
 
                 if tipo == 1:
-
                     listar_ids("pecas")
-
-                    id_peca = force_id(
-                        "pecas",
-                        "ID da peça: "
-                    )
-
+                    id_peca = force_id("pecas", "ID da peça: ")
                     if id_peca is not None:
-                        desativar_peca(
-                            cursor,
-                            conexao,
-                            id_peca
-                        )
+                        desativar_peca(cursor, conexao, id_peca)
 
                 elif tipo == 2:
-
                     listar_ids("servicos")
-
-                    id_servico = force_id(
-                        "servicos",
-                        "ID do serviço: "
-                    )
-
+                    id_servico = force_id("servicos", "ID do serviço: " )
                     if id_servico is not None:
-                        desativar_servico(
-                            cursor,
-                            conexao,
-                            id_servico
-                        )
-
+                        desativar_servico(cursor, conexao, id_servico)
                 else:
-                    print("Opção inválida.")
+                    print(f"{NEGRITO}{AMARELO}Opção inválida.{RESET}")
 
             case _:
-                print("Opção inválida.")
+                print(f"{NEGRITO}{AMARELO}Opção inválida.{RESET}")
+
     
         
