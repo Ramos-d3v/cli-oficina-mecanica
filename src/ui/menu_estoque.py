@@ -1,13 +1,18 @@
 from src.utils.Force import force_int, force_id,force_float,force_str   
 from src.services.pecas import cadastrar_peca, repor_estoque, alterar_peca, consultar_peca, desativar_peca, listar_estoque    
 from src.utils.Force import listar_ids, listar_ids_inativos, force_id_inativo
-from src.utils.protecao import dado_ja_existe
+from src.utils.ProtecaoJulio import dado_ja_existe
 from src.services.servicos import cadastrar_servico, alterar_servico ,desativar_servico, consultar_servico
-from src.utils.Colors import NEGRITO, AMARELO, RESET, VERMELHO, CIANO
+from src.utils.Colors import NEGRITO, AMARELO, RESET, VERMELHO, CIANO, VERDE
+from src.utils.Connection import init_conn
 
 def controle_estoque (conexao, cursor):
     
     while True:
+        
+        if not conexao.is_connected():
+            conexao = init_conn()
+            cursor = conexao.cursor()
         print(f"\n{NEGRITO}{CIANO}┌─────────────────────────────────────────────────┐{RESET}")
         print(f"{NEGRITO}{CIANO}│          CONTROLE DE ESTOQUE & CATÁLOGO         │{RESET}")
         print(f"{NEGRITO}{CIANO}├─────────────────────────────────────────────────┤{RESET}")
@@ -78,8 +83,8 @@ def controle_estoque (conexao, cursor):
                 # 4. Validação da Quantidade (Não pode ser negativa)
                 while True:
                     quantidade = force_int("Quantidade: ")
-                    if quantidade < 0:
-                        print(f"{NEGRITO}{AMARELO}AVISO:{RESET} A quantidade no estoque não pode ser negativa.")
+                    if quantidade <= 0:
+                        print(f"{NEGRITO}{AMARELO}AVISO:{RESET} A quantidade no estoque não pode ser negativa ou igual a zero.")
                         continue
                     break
 
@@ -96,9 +101,15 @@ def controle_estoque (conexao, cursor):
             case 2:
                 listar_ids("pecas")
                 id_peca = force_id( "pecas", "ID da peça (0 para voltar): ")
-                if id_peca is None:
+                if not id_peca:
                     continue
-                qtd = force_int( "Quantidade a adicionar: ")
+                
+                while True:
+                    qtd = force_int( "Quantidade a adicionar: ")
+                    if qtd <= 0:
+                        print(f"{NEGRITO}{AMARELO}AVISO:{RESET} A quantidade deve ser maior que zero.")
+                        continue
+                    break
                 repor_estoque(cursor, conexao, id_peca, qtd)
 
             case 3:
@@ -117,8 +128,14 @@ def controle_estoque (conexao, cursor):
 
                 # 1. Nome (Aceita vazio)
                 nome = input("Novo Nome da Peça: ").strip()
+                
+                if dado_ja_existe(cursor, "pecas", "nome", nome):
+                        print(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Este serviço já está cadastrado no sistema.")
+                        continue
+                       
                 if nome:  # Se não for vazio
                     dados_atualizacao["nome"] = nome
+
 
                 # 2. Fornecedor (Aceita vazio)
                 fornecedor = input("Novo Fornecedor: ").strip()
@@ -128,41 +145,67 @@ def controle_estoque (conexao, cursor):
                 # 3. Preço de Custo (Validação local para aceitar vazio)
                 while True:
                     custo_raw = input("Novo Preço de Custo: ").strip()
+                    
                     if not custo_raw:  # Apertou Enter, mantém o atual
                         break
                     try:
-                        custo = float(custo_raw.replace(",", "."))
-                        if custo >= 0:
-                            dados_atualizacao["preco_custo"] = custo
-                            break
-                        print(f"{AMARELO}O preço não pode ser negativo.{RESET}")
+                        custo_raw = float(custo_raw)
                     except ValueError:
-                        print(f"{AMARELO}Digite um número decimal válido para o custo.{RESET}")
+                        print("Coloque um valor numérico valido")
+                        continue
 
+                    if custo_raw <= 0:
+                        print(f"{NEGRITO}{AMARELO}AVISO:{RESET} O preço de custo deve ser maior que R$ 0,00.")
+                        continue
+                    
+                    custo = custo_raw
+                    if custo >= 0:
+                        dados_atualizacao["preco_custo"] = custo
+                        break
+                    else:
+                        print(f"{AMARELO}O preço não pode ser negativo.{RESET}")
+                    
                 # 4. Preço de Venda (Validação local para aceitar vazio)
                 while True:
                     venda_raw = input("Novo Preço de Venda: ").strip()
                     if not venda_raw:  # Apertou Enter, mantém o atual
                         break
+                    
                     try:
-                        venda = float(venda_raw.replace(",", "."))
-                        if venda >= 0:
-                            dados_atualizacao["preco_venda"] = venda
-                            break
-                        print(f"{AMARELO}O preço não pode ser negativo.{RESET}")
+                        venda_raw = float(venda_raw)
                     except ValueError:
-                        print(f"{AMARELO}Digite um número decimal válido para a venda.{RESET}")
+                        print(f"{NEGRITO}{VERMELHO}ERRO:{RESET} O preço deve ser um número válido.")
+                        continue
 
+                    if venda_raw <= custo_raw:
+                        print(f"{NEGRITO}{AMARELO}AVISO:{RESET} O preço de venda deve ser maior que o preço de custo (R$ {custo_raw:.2f}).")
+                        continue
+                
+                    venda = venda_raw
+                    if venda >= 0:
+                        dados_atualizacao["preco_venda"] = venda
+                        break
+                    else:
+                        print(f"{AMARELO}O preço não pode ser negativo.{RESET}")
+                
                 # 5. Quantidade (Validação local para aceitar vazio)
                 while True:
                     qtd_raw = input("Nova Quantidade em Estoque: ").strip()
-                    if not qtd_raw:  # Apertou Enter, mantém o atual
+                    
+                    if qtd_raw == '':  # Apertou Enter, mantém o atual
                         break
-                    if qtd_raw.isdigit():
-                        dados_atualizacao["quantidade"] = int(qtd_raw)
+                    try:
+                        qtd_raw = int(qtd_raw)
+                    except ValueError:
+                        print(f"{NEGRITO}{VERMELHO}ERRO:{RESET} A quantidade deve ser um número inteiro.")
+                        continue
+                    if qtd_raw <= 0:
+                        print(f"{NEGRITO}{AMARELO}AVISO:{RESET} A quantidade no estoque não pode ser negativa ou igual a zero.")
+                        continue
+                    else:
+                        dados_atualizacao["quantidade"] = qtd_raw
                         break
-                    print(f"{AMARELO}Digite um número inteiro válido para a quantidade.{RESET}")
-
+                    
                 # Se o usuário alterou pelo menos uma coisa, envia pro banco
                 if dados_atualizacao:
                     # 1. Puxa o nome original antes de rodar o update no banco
@@ -173,7 +216,6 @@ def controle_estoque (conexao, cursor):
                     alterar_peca(cursor, conexao, id_peca, dados_atualizacao)
                     
                     # 3. Exibe o relatório detalhado
-                    from src.utils.Colors import VERDE
                     print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Dados da peça '{nome_original}' foram alterados:")
                     
                     tradutor_campos = {
@@ -193,10 +235,12 @@ def controle_estoque (conexao, cursor):
                     print(f"\n{NEGRITO}{AMARELO}[AVISO]{RESET} Nenhuma alteração foi realizada.")
 
             case 4:
+                listar_ids("servicos")
                 # 1. Validação da Descrição + Trava de Duplicidade
                 while True:
-                    descricao = force_str("Descrição do serviço ou aperte ENTER pra voltar: ")
+                    descricao = force_str("Descrição do serviço : ")
                     if descricao == "":
+                        print("A descrição não pode ser vazia.")
                         continue
                     
                     if descricao.isdigit(): # Evita que o serviço se chame "1234"
@@ -212,8 +256,8 @@ def controle_estoque (conexao, cursor):
                 while True:
                     mao_de_obra = force_float("Valor da mão de obra (R$): ")
                     
-                    if mao_de_obra < 0:
-                        print(f"{NEGRITO}{AMARELO}AVISO:{RESET} O valor da mão de obra não pode ser negativo.")
+                    if mao_de_obra <= 0:
+                        print(f"{NEGRITO}{AMARELO}AVISO:{RESET} O valor da mão de obra não pode ser menor ou igual a zero.")
                         continue
                     break
 
@@ -221,12 +265,18 @@ def controle_estoque (conexao, cursor):
                 while True:
                     tempo = force_str("Tempo estimado (ex: '2h', '30 min'): ")
                     
+                    #evita numeros negativos                    
+                    if tempo.startswith('-')  or tempo.startswith('0') :
+                        print(f"{NEGRITO}{VERMELHO}ERRO:{RESET} O tempo estimado não pode ser negativo.")
+                        continue
+
                     # Evita que ele digite só um número solto sem a unidade de tempo (opcional, mas recomendado)
+                    
                     if tempo.isdigit():
                         print(f"{NEGRITO}{AMARELO}AVISO:{RESET} Especifique a unidade de tempo (ex: '2 horas', '45 min').")
                         continue
                     break
-
+                    
                 dados = {
                     "descricao": descricao,
                     "mao_de_obra": mao_de_obra,
@@ -267,19 +317,35 @@ def controle_estoque (conexao, cursor):
                 # 2. Valor da Mão de Obra (Validação local para aceitar vazio)
                 while True:
                     mao_obra_raw = input("Novo Valor da Mão de Obra: ").strip()
-                    if not mao_obra_raw:  # Apertou Enter, mantém o atual
+                    
+                    if mao_obra_raw == '':  # Apertou Enter, mantém o atual
                         break
                     try:
-                        mao_obra = float(mao_obra_raw.replace(",", "."))
-                        if mao_obra >= 0:
-                            dados_atualizacao["mao_de_obra"] = mao_obra
-                            break
-                        print(f"{AMARELO}O valor da mão de obra não pode ser negativo.{RESET}")
+                        mao_obra = float(mao_obra_raw)
                     except ValueError:
-                        print(f"{AMARELO}Digite um número decimal válido para a mão de obra.{RESET}")
+                        print(f"{NEGRITO}{VERMELHO}ERRO:{RESET} O valor da mão de obra deve ser um número válido.")
+                        continue
+                        
+                    if mao_obra >= 0:
+                        dados_atualizacao["mao_de_obra"] = mao_obra
+                        break
+                    print(f"{AMARELO}O valor da mão de obra não pode ser negativo.{RESET}")
+                
+                # 3. Tempo Estimado (Aceita vazio) e sua validação
+                while True:
+                    tempo = force_str("Tempo estimado (ex: '2h', '30 min'): ")
+                    
+                    #evita numeros negativos                    
+                    if tempo.startswith('-')  or tempo.startswith('0') :
+                        print(f"{NEGRITO}{VERMELHO}ERRO:{RESET} O tempo estimado não pode ser negativo.")
+                        continue
 
-                # 3. Tempo Estimado (Aceita vazio)
-                tempo = input("Novo Tempo Estimado: ").strip()
+                    # Evita que ele digite só um número solto sem a unidade de tempo (opcional, mas recomendado)
+                    
+                    if tempo.isdigit():
+                        print(f"{NEGRITO}{AMARELO}AVISO:{RESET} Especifique a unidade de tempo (ex: '2 horas', '45 min').")
+                        continue
+                    break
                 if tempo:
                     dados_atualizacao["tempo_estimado"] = tempo
 
@@ -293,7 +359,7 @@ def controle_estoque (conexao, cursor):
                     alterar_servico(cursor, conexao, dados_atualizacao, id_servico)
                     
                     # 3. Faz o print detalhado puxando o que mudou do dicionário
-                    from src.utils.Colors import VERDE
+                    
                     print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} O serviço '{descricao_original}' foi alterado:")
                     
                     tradutor_campos = {
@@ -336,7 +402,6 @@ def controle_estoque (conexao, cursor):
                         if id_peca is not None:
                             cursor.execute("UPDATE pecas SET ativo = 1 WHERE id = %s", (id_peca,))
                             conexao.commit()
-                            from src.utils.Colors import VERDE
                             print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Peça reativada com sucesso!")
 
                 # 3. Desativar Serviço
@@ -354,7 +419,6 @@ def controle_estoque (conexao, cursor):
                         if id_servico is not None:
                             cursor.execute("UPDATE servicos SET ativo = 1 WHERE id = %s", (id_servico,))
                             conexao.commit()
-                            from src.utils.Colors import VERDE
                             print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Serviço reativado com sucesso!")
 
                 else:

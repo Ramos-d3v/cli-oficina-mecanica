@@ -1,5 +1,5 @@
 import os  # Importado para limpar a tela
-from src.utils.Force import force_float, force_id, force_int, force_str, listar_ids
+from src.utils.Force import force_id, force_int
 from src.ui.menu_principal import menu_principal
 from src.ui.Menu_Relatorios import menu_gerencial
 from src.ui.Menu_Vendas import menu_vendas
@@ -12,6 +12,7 @@ from src.ui.menus_servicos_os.Menu_Servicos_os import menu_servicos_os
 from src.services.servicos_os import listar_os_abertas
 from src.ui.busca import menu_consulta
 
+from src.utils.CrudGeneric import generic_consultar
 # Conexão com banco e inicialização
 from src.utils.Connection import init_conn
 from src.database.banco_dados import start_bd, init_db
@@ -58,11 +59,18 @@ try:
                 limpar_tela()
                 # Sugestão: Se listar_os_abertas puder retornar se há ou não registros,
                 # você pode envelopar isso aqui. Caso contrário, mantém o fluxo:
-                listar_os_abertas(conexao, cursor)
-                id_os = force_int("\nDigite o ID da OS que deseja gerenciar (ou 0 para voltar): ")
-                if id_os != 0:
-                    limpar_tela()
-                    menu_servicos_os(conexao, cursor, id_os)
+                listar_os_abertas(cursor)
+                while True:
+                    id_os = force_int( "\nDigite o ID da OS que deseja gerenciar (ou 0 para voltar): ")
+                    if id_os == 0:
+                        break
+                    resultado = generic_consultar(cursor, 'ordens_servico', 'id', id_os)
+                    if not resultado:
+                        continue
+                    else:
+                        break
+                    
+                menu_servicos_os(conexao, cursor, id_os)
                     
             case 3:
                 limpar_tela()

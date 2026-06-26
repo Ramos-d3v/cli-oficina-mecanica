@@ -19,7 +19,14 @@ def force_float(message: str) -> float:
 def force_str(message: str) -> str:
      while True:
           try:
-               return str(input(message)).strip()
+            entrada = str(input(message)).strip()
+            if entrada.startswith('-'):
+                raise ValueError(f"{NEGRITO}{AMARELO}AVISO:{RESET} você digitou um número negativo.")
+            if entrada == '':
+                raise ValueError(f"{NEGRITO}{AMARELO}AVISO:{RESET} você não digitou nada.")
+            
+            return entrada
+        
           except Exception as e:
                print(f"\n{NEGRITO}{AMARELO}AVISO:{RESET} Digite uma String", e)
 
@@ -58,12 +65,6 @@ def force_id(nome_tabela: str, message: str) -> int:
             print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha técnica ao verificar ID no banco. Detalhes: {erro}")
             print(f"{NEGRITO}Tente novamente.{RESET}")
 
-        finally:
-            # Garante o fechamento das conexões abertas nesta tentativa
-            if cursor:
-                cursor.close()
-            if conexao and conexao.is_connected():
-                conexao.close()
 
 
 
@@ -71,12 +72,11 @@ def force_id(nome_tabela: str, message: str) -> int:
 
 COLUNAS_EXIBICAO = {
     "pecas": ["nome", "CONCAT('R$ ', preco_venda)", "CONCAT('R$ ', preco_custo)", "CONCAT('QTD: ', quantidade)"],
-    # CORREÇÃO AQUI: Faltava a vírgula antes de 'descricao'
     "servicos": ["CONCAT('NOME: ', descricao)", "CONCAT('R$ ', mao_de_obra)"],
     "clientes": ["nome", "CONCAT('TEL: ', telefone)", "CONCAT('CPF: ', cpf)"],
     "veiculos": ["CONCAT('PLACA: ', placa)", "CONCAT('MARCA: ', marca)", "CONCAT('MODELO: ', modelo)", "CONCAT('ANO: ', ano)", "CONCAT('KM: ', quilometragem)"],
     "ordens_servico": ["status", "CONCAT('R$ ', valor_total)"],
-    "promocoes": ["CONCAT('ID: ', id)", "CONCAT('DESCONTO: ', percentual_desconto)"]
+    "promocoes": ["CONCAT('ID: ', id)","CONCAT('nome:', nome)" ,"CONCAT('DESCONTO: ', percentual_desconto,'%')"]
 }
 
 
@@ -219,8 +219,11 @@ def force_telefone(message: str) -> str:
         # Pega o input e remove espaços extras
         entrada = input(message).strip()
         
+        if entrada == '':
+            return ''
         # Remove caracteres comuns que o usuário possa ter digitado (parênteses, traços, espaços)
         apenas_numeros = "".join(caractere for caractere in entrada if caractere.isdigit())
+        
         
         # Validação do tamanho com DDD (10 ou 11 dígitos)
         if len(apenas_numeros) not in [10, 11]:

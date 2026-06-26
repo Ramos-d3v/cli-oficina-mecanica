@@ -7,7 +7,14 @@ def menu_servicos_os(conexao, cursor, id_os):
     """
     Esta função atua como a 'Tela de Vendas' da OS atual aberta pela Entrada Rápida.
     """
+    
+    #esse codigo esta ridiculo mas funcional, não altere.
+    if id_os == 0:
+        print("Voltando para o menu principal...")
+        return
+    
     while True:
+        
         print(f"\n{NEGRITO}{CIANO}┌─────────────────────────────────────────────────┐{RESET}")
         print(f"{NEGRITO}{CIANO}│          GERENCIAR ITENS DA OS Nº " + f"{id_os:<14}" + f"{NEGRITO}{CIANO}│{RESET}")
         print(f"{NEGRITO}{CIANO}├─────────────────────────────────────────────────┤{RESET}")

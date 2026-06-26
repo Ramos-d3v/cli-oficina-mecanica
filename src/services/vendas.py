@@ -1,9 +1,10 @@
 import datetime
+from src.services.emitir_nota_fical import emitir_nota_fical_venda
 from src.utils.Force import force_int
 from src.utils.Colors import VERDE, VERMELHO, AMARELO, NEGRITO, CIANO, RESET
 
 
-def realizar_venda_os(conexao, cursor, id_os: int) -> bool:
+def realizar_venda_os(cursor, id_os: int) -> bool:
     """
     Ao fechar uma OS, registra cada item (peça ou serviço) como uma linha
     na tabela 'vendas', vinculando ao cliente e veículo da OS.
@@ -55,16 +56,15 @@ def realizar_venda_os(conexao, cursor, id_os: int) -> bool:
             cursor.execute("""
                 INSERT INTO vendas (
                     data_venda, cliente_id, veiculo_id, ordem_id,
-                    peca_id, promocao_id, quantidade, preco_unitario, valor_total
+                    peca_id, servico_id, quantidade, preco_unitario, valor_total
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 data_venda,
                 cliente_id,
                 veiculo_id,
                 ordem_id,
-                peca_id,  
-                servico_id,  
-                None,    
+                peca_id,       # None se for serviço
+                servico_id,    # None se for peça
                 quantidade,
                 preco_unitario,
                 subtotal
@@ -76,6 +76,7 @@ def realizar_venda_os(conexao, cursor, id_os: int) -> bool:
                 total_servicos += 1
 
         print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} OS '{ordem_id}' faturada: {total_pecas} peça(s) e {total_servicos} serviço(s) registrados em vendas.")
+        
         return True
 
     except Exception as erro:
@@ -148,6 +149,10 @@ def registrar_venda_args(conexao, cursor, cliente_id: int | None, itens_venda: l
         tipo_venda = f"Cliente ID {cliente_id}" if cliente_id else "Venda Avulsa"
         print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Venda nº '{venda_id}' registrada! [{tipo_venda}]")
         print(f"   {NEGRITO}Total: R$ {valor_total_venda:.2f}{RESET}")
+        
+        emitir = input(f"\n{AMARELO}Deseja gerar a nota fiscal desta venda (TXT)? (s/n): {RESET}").strip().lower()
+        if emitir == 's':
+            emitir_nota_fical_venda(conexao, cursor, venda_id)
         return True
 
     except Exception as erro:
@@ -156,7 +161,7 @@ def registrar_venda_args(conexao, cursor, cliente_id: int | None, itens_venda: l
         return False
 
 
-def consultar_preco(conexao, cursor):
+def consultar_preco(cursor):
     print("=== CONSULTAR PREÇO / ESTOQUE ===")
     
     # Busca prévia de alertas para guiar o usuário antes da consulta
@@ -208,7 +213,7 @@ def consultar_preco(conexao, cursor):
 
     input("\nPressione Enter para voltar...")
 
-def historico_vendas(conexao, cursor):
+def historico_vendas( cursor):
     print("=== HISTÓRICO DE VENDAS REALIZADAS ===")
 
     cursor.execute("""
@@ -235,7 +240,7 @@ def historico_vendas(conexao, cursor):
     input("\nPressione Enter para voltar...")
 
 
-def itens_estoque_baixo(conexao, cursor):
+def itens_estoque_baixo(cursor):
     print("=== ALERTA DE ITENS COM ESTOQUE BAIXO ===")
     limite = force_int("Definir limite crítico de estoque (ex: 5): ")
 

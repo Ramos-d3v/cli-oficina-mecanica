@@ -1,6 +1,8 @@
 from src.services.Relatorios import rel_fat_periodo, rel_pecas, rel_servicos, exp_txt
 from src.utils.Force import force_int
 from src.utils.Colors import NEGRITO, VERMELHO, RESET, CIANO
+from src.utils.Connection import init_conn
+
 
 def menu_gerencial(conexao, cursor):
     while True:

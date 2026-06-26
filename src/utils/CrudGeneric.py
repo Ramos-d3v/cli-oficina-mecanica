@@ -1,6 +1,6 @@
 import mysql.connector
 from src.utils.Colors import NEGRITO, VERMELHO, AMARELO, CIANO, RESET, VERDE
-  
+
 def generic_cadastrar(conexao, cursor, tabela: str, dados: dict) -> bool:
     """
     Insere um registro de forma genérica em qualquer tabela.
@@ -21,7 +21,8 @@ def generic_cadastrar(conexao, cursor, tabela: str, dados: dict) -> bool:
         conexao.rollback()
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha ao cadastrar na tabela '{tabela}'. Detalhes: {erro}")
         return False
-
+    
+            
 
 def generic_consultar(cursor, tabela: str, campo_busca: str, termo_busca) -> tuple:
     """
@@ -37,8 +38,7 @@ def generic_consultar(cursor, tabela: str, campo_busca: str, termo_busca) -> tup
     except mysql.connector.Error as erro:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha ao consultar a tabela '{tabela}'. Detalhes: {erro}")
         return None
-
-
+        
 def generic_alterar(conexao, cursor, tabela: str, dados_novos: dict, id_registro: int) -> bool:
     """
     Atualiza colunas dinâmicas baseado no ID do registro.
@@ -61,7 +61,6 @@ def generic_alterar(conexao, cursor, tabela: str, dados_novos: dict, id_registro
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha ao atualizar a tabela '{tabela}'. Detalhes: {erro}")
         return False
 
-
 def generic_desativar(conexao, cursor, tabela: str, id_registro: int) -> bool:
     """
     Aplica o Soft Delete (ativo = 0) de forma genérica em qualquer tabela.
@@ -76,6 +75,7 @@ def generic_desativar(conexao, cursor, tabela: str, id_registro: int) -> bool:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha ao desativar registro na tabela '{tabela}'. Detalhes: {erro}")
         return False
 
+    
 
 def generic_listar(cursor, tabela: str, apenas_ativos: bool = True) -> tuple:
     """
@@ -93,7 +93,8 @@ def generic_listar(cursor, tabela: str, apenas_ativos: bool = True) -> tuple:
     except mysql.connector.Error as erro:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha ao listar a tabela '{tabela}'. Detalhes: {erro}")
         return []
-    
+
+        
 def generic_desativar_em_lote(conexao, cursor, tabela: str, *ids_registros) -> bool:
     """
     Aplica o Soft Delete (ativo = 0) em lote para múltiplos IDs passados via *args.
@@ -119,18 +120,11 @@ def generic_desativar_em_lote(conexao, cursor, tabela: str, *ids_registros) -> b
     except mysql.connector.Error as erro:
         conexao.rollback()
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha ao desativar em lote na tabela '{tabela}'. Detalhes: {erro}")
-        return False
+        return False    
 
+    
 
-
-def generic_filtrar(
-    cursor,
-    tabela: str,
-    colunas: str = "*",
-    where: str | None = None,
-    params: tuple = (),
-    order_by: str | None = None
-) -> list:
+def generic_filtrar(cursor,tabela: str,colunas: str = "*",where: str | None = None,params: tuple = (),order_by: str | None = None ) -> list:
     """Executa buscas genéricas no MySQL retornando uma lista de dicionários."""
     
     # Construção da query (as crases protegem nomes de tabelas/colunas no MySQL)
@@ -148,4 +142,7 @@ def generic_filtrar(
         return cursor.fetchall()  # Retorna lista de dicionários se o cursor estiver configurado
     except Exception as e:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao buscar dados. Detalhes: {e}")
-        return []        
+        return []   
+        
+
+                

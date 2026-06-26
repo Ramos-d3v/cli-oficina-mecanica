@@ -1,7 +1,8 @@
 from src.services.vendas import registrar_venda_args, realizar_venda_os, historico_vendas, itens_estoque_baixo, consultar_preco
 from src.utils.Force import force_int
 from src.utils.Colors import NEGRITO, VERMELHO, VERDE, CIANO, AMARELO, RESET
-from src.utils.protecao import obter_cpf
+from src.utils.ProtecaoJulio import obter_cpf
+from src.utils.Connection import init_conn
 
 
 def listar_pecas_disponiveis(cursor):
@@ -29,9 +30,13 @@ def listar_pecas_disponiveis(cursor):
     print(f"{NEGRITO}{CIANO}╚══════╩══════════════════════════════╩════════════╩══════════╝{RESET}")
     return True
 
-
 def menu_vendas(conexao, cursor):
+    
+    if not conexao.is_connected():
+        conexao = init_conn()
+        cursor = conexao.cursor()
     while True:
+        
         print(f"\n{NEGRITO}{CIANO}┌─────────────────────────────────────────────────┐{RESET}")
         print(f"{NEGRITO}{CIANO}│             🛒 BALCÃO DE VENDAS & ITENS         │{RESET}")
         print(f"{NEGRITO}{CIANO}├─────────────────────────────────────────────────┤{RESET}")
@@ -129,11 +134,11 @@ def menu_vendas(conexao, cursor):
             input("\nPressione Enter para continuar...")
 
         elif opcao == 2:
-            consultar_preco(conexao, cursor)
+            consultar_preco( cursor)
         elif opcao == 3:
-            historico_vendas(conexao, cursor)
+            historico_vendas( cursor)
         elif opcao == 4:
-            itens_estoque_baixo(conexao, cursor)
+            itens_estoque_baixo(cursor)
         elif opcao == 0:
             break
         else:

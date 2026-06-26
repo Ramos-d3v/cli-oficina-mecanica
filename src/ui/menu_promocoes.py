@@ -3,9 +3,14 @@ from src.utils.Force import listar_ids
 from src.services.Promoçoes import aplicar_desconto, editar_promocoes, desativar_promocao_sistema
 from src.utils.CrudGeneric import generic_listar
 from src.utils.Colors import NEGRITO, VERMELHO, RESET, CIANO
+from src.utils.Connection import init_conn
 
 def menu_promocoes(conexao, cursor):
     while True:
+        
+        if not conexao.is_connected():
+            conexao = init_conn()
+            cursor = conexao.cursor()
         print(f"\n{NEGRITO}{CIANO}┌─────────────────────────────────────────────────┐{RESET}")
         print(f"{NEGRITO}{CIANO}│               GERENCIAR PROMOÇÕES               │{RESET}")
         print(f"{NEGRITO}{CIANO}├─────────────────────────────────────────────────┤{RESET}")

@@ -2,6 +2,7 @@ import mysql.connector, datetime
 from datetime import date
 
 from src.utils.Force import force_int
+from src.utils.ProtecaoJulio import obter_ano
 
 from src.utils.Colors import NEGRITO, VERMELHO, VERDE, CIANO, RESET
 
@@ -13,7 +14,7 @@ def rel_fat_periodo(conexao, cursor):
     def capturar_data_valida(rotulo):
         while True:
             print(f"--- {rotulo} ---")
-            ano = force_int("Ano (AAAA): ")
+            ano = obter_ano("Ano (AAAA): ")
             if ano == 0:
                 return None
                 
@@ -23,7 +24,7 @@ def rel_fat_periodo(conexao, cursor):
             try:
                 return date(ano, mes, dia).strftime("%Y-%m-%d")
             except ValueError:
-                print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Data inválida (ex: dia inexistente neste mês). Tente novamente.\n")
+                print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Data inválida (ex: dia ou mês inexistente). Tente novamente.\n")
 
     data_inicio = capturar_data_valida("DATA INICIAL")
     data_fim = capturar_data_valida("DATA FINAL") if data_inicio else None
@@ -150,8 +151,8 @@ def exp_txt(conexao, cursor):
         qtd_vendas_hoje = res_vendas[1] if res_vendas else 0
 
         # Faturamento unificado do dia
-        faturamento_total_hoje = faturamento_os + faturamento_vendas
-
+        #transformando tudo em flçoat para ndar erro de tipo
+        faturamento_total_hoje = float(faturamento_os) + float(faturamento_vendas)
         nome_arquivo = f"resumo_oficina_{hoje}.txt"
         with open(nome_arquivo, "w", encoding="utf-8") as f:
             f.write(f"=== RELATÓRIO DIÁRIO DA OFICINA ({hoje}) ===\n\n")

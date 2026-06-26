@@ -1,10 +1,13 @@
 # import mysql.connector
 import datetime
-from src.utils.Force import force_int, force_str
+from src.utils.Force import force_int
 from src.utils.CrudGeneric import generic_cadastrar, generic_consultar, generic_alterar
 from src.utils.Colors import NEGRITO, CIANO, AMARELO, VERDE, VERMELHO, RESET, CINZENTO
 from src.services.vendas import realizar_venda_os
 from src.utils.Force import listar_ids  
+from src.services.emitir_nota_fical import emitir_nota_fical_os
+from src.utils.ProtecaoJulio import obter_cpf
+
 
 
 def adicionar_peca(conexao, cursor, id_os=None) -> bool:
@@ -17,23 +20,27 @@ def adicionar_peca(conexao, cursor, id_os=None) -> bool:
 
         print(f"\n{NEGRITO}=== PEÇAS DISPONÍVEIS EM ESTOQUE ==={RESET}")
         listar_ids("pecas")
-        print()
+        
             
         id_peca = force_int("ID da peça: ")
-        quantidade = force_int("Quantidade: ")
+        while True:
+            quantidade = force_int("Quantidade: ")
+            if not quantidade > 0:
+                print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Quantidade inválida. Deve ser maior que zero")
+                continue
+                
 
-        # Consulta a peça de forma genérica
-        peca = generic_consultar(cursor, 'pecas', 'id', id_peca)
+            # Consulta a peça de forma genérica
+            peca = generic_consultar(cursor, 'pecas', 'id', id_peca)
 
-        if not peca or peca[6] == 0:  # Índice 6 é o 'ativo' da tabela pecas
-            print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Peça não encontrada.")
-
-            return False
-            
-        if peca[5] < quantidade:  # Índice 5 é a 'quantidade' em estoque
-            print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Estoque insuficiente. Quantidade disponível: {peca[5]}")
-            return False
-
+            if not peca or peca[6] == 0:  # Índice 6 é o 'ativo' da tabela pecas
+                print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Peça não encontrada.")
+                return
+                
+            if peca[5] < quantidade:  # Índice 5 é a 'quantidade' em estoque
+                print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Estoque insuficiente. Quantidade disponível: {peca[5]}")
+                continue
+            break
         preco_venda = peca[4]  # Índice 4 é o 'preco_venda'
         subtotal = preco_venda * quantidade
 
@@ -72,9 +79,10 @@ def adicionar_servico(conexao, cursor, id_os=None) -> bool:
     Adiciona a mão de obra de um serviço à Ordem de Serviço utilizando o CrudGeneric.
     """
     try:
+        listar_ids("servicos")
         if id_os is None:
             id_os = force_int("ID da OS: ")
-            
+        
         id_servico = force_int("ID do serviço: ")
 
         # Consulta o catálogo de serviços de forma genérica
@@ -83,7 +91,7 @@ def adicionar_servico(conexao, cursor, id_os=None) -> bool:
         if not servico or servico[4] == 0:  # Índice 4 é o 'ativo' de serviços
             print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Serviço não encontrado.")
             return False
-
+        
         subtotal = servico[2]  # Índice 2 é a 'mao_de_obra'
 
         # Insere o serviço na OS
@@ -137,10 +145,22 @@ def fechar_os(conexao, cursor, id_os=None) -> bool:
             generic_alterar(conexao, cursor, 'ordens_servico', dados_fechamento, id_os)
             
             # Registra os itens da OS como vendas consolidadas no banco de dados
-            realizar_venda_os(conexao, cursor, id_os)
+            realizar_venda_os(cursor, id_os)
 
             conexao.commit()
+
+            visualizar_os(conexao, cursor, id_os)
+
+            
             print(f"\n{NEGRITO}{VERDE}SUCESSO:{RESET} Ordem de Serviço Finalizada e Faturada com sucesso!")
+            emitir = input(f"\n{AMARELO}Deseja emitir a Nota Fiscal agora? (s/n): {RESET}").strip().lower()
+            if emitir == 's':
+                cpf_nota = None
+                add_cpf = input(f"{AMARELO}Deseja informar/confirmar o CPF na nota? (s/n): {RESET}").strip().lower()
+                if add_cpf == 's':
+                    cpf_nota = obter_cpf(f"{NEGRITO}Digite o CPF {CIANO}(somente números){RESET}{NEGRITO}: {RESET}")
+                
+                emitir_nota_fical_os(conexao, cursor, id_os, cpf_avulso=cpf_nota)
 
             # Registra os itens da OS como vendas consolidadas no banco de dados
             return True
@@ -177,7 +197,7 @@ def cancelar_os(conexao, cursor, id_os=None) -> bool:
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Erro ao cancelar OS. Detalhes: {erro}")
         return False
 
-def listar_os_abertas(conexao, cursor):
+def listar_os_abertas( cursor):
 
     try:
 

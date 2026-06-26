@@ -1,7 +1,6 @@
 import mysql.connector, os
 from dotenv import load_dotenv
 from src.utils.Colors import NEGRITO, VERMELHO_B, RESET
-from src.utils.Connection import init_conn
 
 
 def init_db() -> bool:
@@ -148,7 +147,6 @@ def start_bd(conexao, cursor):
 
         cursor.execute("ALTER TABLE vendas MODIFY cliente_id INT NULL")
 
-        #Tabela de vendas de itens/peças unitárias(Não precisa vincular a um cliente_id)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vendas_itens (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -158,26 +156,10 @@ def start_bd(conexao, cursor):
                 quantidade INT DEFAULT 1,
                 subtotal DECIMAL(10,2) NOT NULL,
                 FOREIGN KEY (venda_id) REFERENCES vendas(id),
-                FOREIGN KEY (servico_id) REFERENCES servicos(id),
                 FOREIGN KEY (peca_id) REFERENCES pecas(id)
             )
         """)
-        cursor.execute("SELECT COUNT(*) FROM vendas_itens")
-        if cursor.fetchone()[0] == 0:
-            
-            #(venda_id, peca_id, quantidade, subtotal)
-            # ID 1 e 2 já existem na tabela vendas, só vai puxar dados que já existem em outra tabela
-            itens_venda_iniciais = [
-                (1, 1, 3, 105.00), 
-                (1, 2, 1, 28.00),  
-                (2, 1, 1, 35.00)   
-            ]
-            
-            cursor.executemany("""
-                INSERT INTO vendas_itens (venda_id, peca_id, quantidade, subtotal)
-                VALUES (%s, %s, %s, %s)
-            """, itens_venda_iniciais)
-        
+      
         # ==========================================
         # INSERÇÃO DE DADOS INICIAIS (SEEDERS)
         # ==========================================

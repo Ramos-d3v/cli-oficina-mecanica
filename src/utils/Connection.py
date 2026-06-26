@@ -2,6 +2,9 @@
 import os, mysql.connector
 from src.utils.Colors import NEGRITO, VERMELHO, RESET
 from dotenv import load_dotenv
+
+
+
 def init_conn():
     
 

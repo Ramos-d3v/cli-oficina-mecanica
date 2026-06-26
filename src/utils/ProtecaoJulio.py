@@ -1,5 +1,4 @@
 from src.utils.Colors import NEGRITO, VERMELHO, RESET
-
 def texto_valido(mensagem):
     #Garante que o texto não seja vazio e não contenha apenas números (ex: Marca/Modelo)
 
@@ -21,6 +20,10 @@ def obter_cpf(mensagem):
         # Remove pontos e traços caso o funcionário digite por hábito
         cpf = input(mensagem).strip().replace(".", "").replace("-", "")
         
+        
+        if cpf == '':
+            return ''
+     
         if not cpf.isdigit(): # .isdigit verifica se foi digitado APENAS números
             print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} O CPF deve conter apenas números.")
             continue
@@ -51,6 +54,8 @@ def obter_placa(mensagem):
 
     while True:
         placa = input(mensagem).strip().upper().replace("-", "")
+        if placa == '':
+            return ''
         if len(placa) == 7:
             return placa
         print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Placa inválida. Deve conter exatamente 7 caracteres (Ex: ABC1234 ou ABC1D23).")
@@ -63,6 +68,12 @@ def dado_ja_existe(cursor, tabela: str, coluna: str, valor: str) -> bool:
     try:
         query = f"SELECT 1 FROM {tabela} WHERE {coluna} = %s AND ativo = 1"
         cursor.execute(query, (valor,))
-        return cursor.fetchone() is not None
+        existe = cursor.fetchone() 
+        if existe:
+            return True
+        else:
+            return False
     except Exception:
         return False
+
+

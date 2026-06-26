@@ -1,16 +1,15 @@
 import datetime
 from src.utils.CrudGeneric import generic_cadastrar, generic_consultar
 
-def buscar_veiculo_completo(cursor, placa):
+def buscar_veiculo_completo(cursor, placa) -> tuple:
     """
     Busca o veículo pela placa. Se achar, busca também os dados do dono (cliente).
-    Retorna uma tupla (veiculo, cliente, telefone) ou (None, None, None).
+    Retorna uma tupla (veiculo, cliente) ou (None, None).
     """
-    # 1. Busca o veículo usando seu CRUD Genérico
+    # 1. Busca o veículo usando CRUD Genérico
     veiculo = generic_consultar(cursor, 'veiculos', 'placa', placa)
     
     if veiculo:
-        # veiculo[1] é o cliente_id
         cliente_id = veiculo[1]
         cliente = generic_consultar(cursor, 'clientes', 'id', cliente_id)              
         return veiculo, cliente

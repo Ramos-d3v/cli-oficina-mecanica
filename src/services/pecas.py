@@ -4,7 +4,7 @@ from src.utils.Colors import NEGRITO, AMARELO, VERMELHO, VERDE, CIANO, RESET
 
 def cadastrar_peca(cursor, conexao, dados):
     """
-    Função para cadastrar as peças
+    Função para cadastrar as peças usando generic
     """
     
     resultado = generic_cadastrar(conexao, cursor, 'pecas', dados)
@@ -16,25 +16,31 @@ def cadastrar_peca(cursor, conexao, dados):
 
 
 def repor_estoque(cursor, conexao, id_peca, qtd):
+    try:
+        # Força o banco a atualizar a "foto" dos dados (limpa o cache de leitura)
+        conexao.rollback()
 
-    cursor.execute(
-        "SELECT 1 FROM pecas WHERE id = %s AND ativo = 1",
-        (id_peca,)
-    )
+        # CORREÇÃO: Executa APENAS o SELECT de verdade
+        cursor.execute("SELECT 1 FROM pecas WHERE id = %s AND ativo = 1", (id_peca,))
 
-    if not cursor.fetchone():
-        print(f"\n{NEGRITO}{AMARELO}[AVISO]{RESET} Peça não encontrada no sistema.")
+        if not cursor.fetchone():
+            print(f"\n{NEGRITO}{AMARELO}[AVISO]{RESET} Peça não encontrada no sistema.")
+            return
 
-        return
+        # Executa o update normalmente
+        cursor.execute("""
+            UPDATE pecas
+            SET quantidade = quantidade + %s
+            WHERE id = %s AND ativo = 1
+        """, (qtd, id_peca))
 
-    cursor.execute("""
-        UPDATE pecas
-        SET quantidade = quantidade + %s
-        WHERE id = %s AND ativo = 1
-    """, (qtd, id_peca))
+        # O Python se encarrega de fechar a transação com segurança aqui:
+        conexao.commit()
+        print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Estoque atualizado com sucesso!")
 
-    conexao.commit()
-    print(f"\n{NEGRITO}{VERDE}[SUCESSO]{RESET} Estoque atualizado com sucesso!")
+    except Exception as erro:
+        conexao.rollback()
+        print(f"\n{NEGRITO}{VERMELHO}ERRO:{RESET} Falha ao repor estoque. Detalhes: {erro}")
 
 
 

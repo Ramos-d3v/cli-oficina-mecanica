@@ -1,4 +1,3 @@
-from src.utils.Force import force_id, force_int, force_float, force_str
 from src.utils.Force import listar_ids
 from src.utils.CrudGeneric import generic_alterar, generic_cadastrar, generic_consultar, generic_desativar, generic_listar
 from src.utils.Colors import AMARELO, NEGRITO, VERDE, VERMELHO, CIANO, BRANCO, CINZENTO, RESET

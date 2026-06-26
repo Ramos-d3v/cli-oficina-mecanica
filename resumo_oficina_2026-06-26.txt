@@ -1,0 +1,9 @@
+=== RELATÓRIO DIÁRIO DA OFICINA (2026-06-26) ===
+
+Faturamento de Ordens de Serviço: R$ 280.00
+Faturamento de Vendas Diretas:   R$ 280.00
+--------------------------------------------------
+FATURAMENTO TOTAL DO DIA:        R$ 560.00
+
+Ordens de Serviço Fechadas Hoje: 1
+Vendas Diretas Realizadas Hoje:  2
